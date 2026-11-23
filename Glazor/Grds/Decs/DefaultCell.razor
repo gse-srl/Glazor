@@ -1,0 +1,169 @@
+﻿@namespace Glazor.Grds.Decs
+
+@using Glazor.Grds
+@using Glazor.Grds.Mdls
+@using Glazor.Misc
+
+@typeparam TGridItem
+
+@inject ILogger<DefaultCell<TGridItem>> Logger
+
+@code {
+
+    /// <summary>The cell to draw, as the grid's <c>CellTemplate</c> receives it.</summary>
+    [Parameter]
+    public IGrigliaria<TGridItem>.CellTemplateParam Param { get; set; } = null!;
+
+    /// <summary>Stops the cell's click from reaching the elements around it.</summary>
+    [Parameter]
+    public bool MouseClickCancelBubble { get; set; } = false;
+
+    /// <summary>Styles added to the cell's own.</summary>
+    [Parameter]
+    public string? Style { get; set; }
+    /// <summary>Classes added to the cell's own.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>Drawn in place of the value, as Treegliaria's node label is.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private ElementReference _td;
+    private string? _editedColumn;   // the column, while the cell shows a value of the row edited in place
+
+    // While the row is edited in place, its cells with a value are Tab stops too, and the cell cursor follows the focus
+    private Dictionary<string, object>? EditAttributes() => _editedColumn is not { } name ? null : new()
+    {
+        ["tabindex"] = "0",
+        ["onfocusin"] = EventCallback.Factory.Create<FocusEventArgs>(this, () => Param.Grid.EditCellFocused(name)),
+    };
+
+    /// <inheritdoc/>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_editedColumn != null && Param.Grid.ClaimEditorFocus(_editedColumn, editor: false))
+            await _td.FocusAsync();
+    }
+
+    // The value as a cell shows it, by the column's renderer or else by its type; the row dialog draws it too
+    internal static RenderFragment Value(DecoratorContext<TGridItem, object> dctx) => __builder =>
+    {
+        RenderFragment<DecoratorContext<TGridItem, object>>? rf = dctx.Column.GetRenderer();
+        if (rf != null) {
+            @rf(dctx)
+        }
+        else if (dctx.Value is Enum e) {
+            <Clamper LinesToClamp="@dctx.Column.GetLinesToClamp()">
+                @(e.GetDescription())
+            </Clamper>
+        }
+        else if (dctx.Value is bool bvalue) {
+            <input type="checkbox" disabled="@true" checked="@bvalue" aria-label="@dctx.Column.GetLabel()"/>
+        }
+        else if (dctx.Value != null) {
+            <Clamper LinesToClamp="@dctx.Column.GetLinesToClamp()">
+                @(dctx.Value.ToString())
+            </Clamper>
+        }
+    };
+
+    // MultiSelGrid's and Treegliaria's wrappers hide the interfaces of the model they wrap; a host's own wrapper may add one
+    internal static T? FindWrapped<T>(IGridModel<TGridItem> model) where T : class => model as T ?? model switch
+    {
+        MultiSelGrid<TGridItem>.MSelModel<TGridItem> msel => FindWrapped<T>(msel._wrapped),
+        GridModelWrapper<TGridItem> wrapper => FindWrapped<T>(wrapper._gridModel),
+        _ => null,
+    };
+}
+
+@{
+    _editedColumn = null;
+    if (!Param.Grid.IsIdle()) {
+        <td @key="@("td" + Param.RowIdx + "c" + Param.ColIdx)">...</td>
+        return;
+    }
+    TGridItem item;
+    try {
+        item = Param.Model.GetItem(Param.RowIdx);
+    }
+    catch (Exception e) when (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException) {
+        if (FindWrapped<IAsyncGridModel<TGridItem>>(Param.Model) != null) {
+            if (Logger.IsEnabled(LogLevel.Trace))
+                Logger.LogTrace(e, "Normally this should be ignored when dealing with an IAsyncGridModel");
+            <td @key="@("td" + Param.RowIdx + "c" + Param.ColIdx)">...</td>
+            return;
+        }
+        throw;
+    }
+    Alignment alignment = Param.Column.GetAlignment();
+    object? value;
+    try {
+        value = Param.Model.GetValue(item, Param.ColIdx);
+    }
+    catch (NullReferenceException e) {
+        // The row being inserted is a prototype whose members may still be null; a getter failing on any other row is the host's bug
+        if (FindWrapped<IEditableGridModel<TGridItem>>(Param.Model) is { } ed && ed.IsInsertPending() && Param.RowIdx == Param.Model.GetCurrentRow()) {
+            if (Logger.IsEnabled(LogLevel.Trace))
+                Logger.LogTrace(e, "Normally this should be ignored when dealing with an IEditableGridModel");
+            <td @key="@("td" + Param.RowIdx + "c" + Param.ColIdx)">...</td>
+            return;
+        }
+        throw;
+    }
+    DecoratorContext<TGridItem, object> dctx = new(item, value, Param.RowIdx, Param.Column);
+    RenderFragment? clickFragment = null; 
+    bool isCurrentCell = false;
+    if (Param.Grid.IsCellCursorEnabled()) {
+        if (Param.RowIdx == Param.Model.GetCurrentRow()) {
+            string colName = Param.Model.GetColumnName(Param.ColIdx);
+            isCurrentCell = colName == Param.Grid.GetCurrentCol();
+        }
+        clickFragment = @<MouseAction Type="MouseAction.MouseType.Click" BindAncestorWithTag="td"
+            OnMouse="@(async (evt) => await Param.Grid.RowClickedAsync(Param.RowIdx, Param.ColIdx))"
+            Enabled="@(Param.Grid.IsCellCursorEnabled() && (!Param.Model.IsCurrentRowFrozen() || Param.Grid.IsFastEdit))"
+            CancelBubble="@MouseClickCancelBubble"/>;
+    }
+    RenderFragment? dblClickFragment = @<MouseAction Type="MouseAction.MouseType.DblClick" BindAncestorWithTag="td"
+            OnMouse="@(async (evt) => await Param.Grid.DblClickAsync(Param.RowIdx, Param.ColIdx))"
+            Enabled="@(Param.Grid.IsCellCursorEnabled() && !Param.Model.IsCurrentRowFrozen())"/>;
+    //
+    Alignment _align = alignment != Alignment.Default ? alignment :
+        (value.IsNumber()) ? Alignment.Right : 
+                (value is DateOnly || value is TimeOnly || value is DateTime || value is DateTimeOffset || value is Enum || value is bool) ? Alignment.Center : Alignment.Left;
+    if (Param.Grid.CellEditContext(Param.RowIdx, Param.Column) is { } editContext) {
+        <DefaultCellEditor TGridItem="TGridItem" Param="@Param" EditContext="@editContext" Item="@item" Style="@Style"
+                Align="@(_align.ToString().ToLowerInvariant())"/>
+        return;
+    }
+    _editedColumn = Param.Grid.IsEditedRow(Param.RowIdx) ? Param.Model.GetColumnName(Param.ColIdx) : null;
+    string? cellClass = Param.Column.GetCellClassFn()?.Invoke(dctx);
+    <td @key="@("td" + Param.RowIdx + "c" + Param.ColIdx)"
+            @ref="_td" @attributes="EditAttributes()"
+            align="@(_align.ToString().ToLowerInvariant())"
+            style="@Style"
+            class="@(isCurrentCell ? Class + " data current " + cellClass : Class + " data " + cellClass)">
+        @{
+            try {
+                if (ChildContent != null) {
+                    @ChildContent
+                }
+                else {
+                    @Value(dctx)
+                }
+            }
+            catch (Exception ex) {
+                Logger.LogError("Error while rendering column: '{col}' message: {msg}", Param.Model.GetColumnName(Param.ColIdx), ex.Message);
+                throw;
+            }
+        }
+        @if (_editedColumn != null && Param.Grid.HasEditEdge(_editedColumn, -1)) {
+            <EditEdge TGridItem="TGridItem" Grid="@Param.Grid" Step="-1" />
+        }
+        @if (_editedColumn != null && Param.Grid.HasEditEdge(_editedColumn, 1)) {
+            <EditEdge TGridItem="TGridItem" Grid="@Param.Grid" Step="1" />
+        }
+        @clickFragment
+        @dblClickFragment
+    </td>
+}

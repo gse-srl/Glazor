@@ -1,0 +1,541 @@
+﻿/* The library's elements carry the class "glazor" beside their own, and every rule here requires it, so a host's .popup,
+   .dialog, .disabled or .message-icon rules and these do not meet. The one exception is :root, which holds only the
+   --glazor-* custom properties: every colour the components use and every icon they draw, with the light defaults. A
+   theme redefines them, glazor-dark.css for the whole page or a host's own rule on an ancestor for a part of it. */
+:root {
+    --glazor-color-scheme: light;
+    --glazor-fg: currentColor;
+    --glazor-link: LinkText;
+    --glazor-header-bg: #dddddd;
+    --glazor-header-fixed-bg: #eeeeee;
+    --glazor-header-fg: #555555;
+    --glazor-header-border: darkgray;
+    --glazor-rule: darkgray;
+    --glazor-row-odd-bg: #ffffff;
+    --glazor-row-even-bg: #fffaea;
+    --glazor-row-current-bg: #ddddff;
+    --glazor-row-edited-bg: #ccccff;
+    --glazor-cell-current-bg: #bbbbff;
+    --glazor-no-data-fg: #707070;
+    --glazor-focus-outline: #4a90d9;
+    --glazor-tree-indent: #f0f0f0;
+    --glazor-scroll-track-bg: #f6f5f0;
+    --glazor-scroll-handle-bg: #c6d5fd;
+    --glazor-scroll-button-bg: #cccccc;
+    --glazor-button-bg: ButtonFace;
+    --glazor-button-fg: ButtonText;
+    --glazor-primary-bg: #2f5d8a;
+    --glazor-primary-fg: #ffffff;
+    --glazor-popup-bg: #ffffff;
+    --glazor-popup-border: #e0e0e0;
+    --glazor-popup-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    --glazor-popup-hover-bg: #f5f5f5;
+    --glazor-overlay-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    --glazor-backdrop: rgba(0, 0, 0, 0.45);
+    --glazor-spinner: #2f5d8a;
+    --glazor-spinner-backdrop: rgba(0, 0, 0, 0.2);
+    --glazor-clamper-mark: yellow;
+    --glazor-clamper-popup-bg: white;
+    --glazor-clamper-popup-border: black;
+    --glazor-message-bg: white;
+    --glazor-message-border: red;
+    --glazor-message-icon: red;
+    --glazor-message-icon-bg: white;
+    /* --glazor-editor-bg, -border and -focus have no default here: each use falls back to the property it follows, resolved
+       on the editor, so a theme set on an ancestor reaches it */
+    --glazor-icon-accent: #c25a00;
+    --glazor-tab-border: #d3d3d3;
+    --glazor-tab-secondary-border: #d3d3d3;
+    --glazor-tab-bg: #ffffff;
+    --glazor-tab-label-inactive-bg: #efefff;
+    --glazor-tab-label-disabled-bg: #eeeeee;
+    --glazor-tab-label-fg: #000000;
+    --glazor-tab-label-inactive-fg: #5a6a7c;
+    --glazor-tab-label-disabled-fg: #a9a9a9;
+    /* Icons: an SVG mask filled with the element's colour. A theme may swap a shape; a size is the element's. */
+    --glazor-icon-sort-asc: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 12L8 4l6 8z'/%3E%3C/svg%3E");
+    --glazor-icon-sort-desc: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 4h12l-6 8z'/%3E%3C/svg%3E");
+    --glazor-icon-filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 2h14L9.5 8.5V14l-3-1.5v-4z'/%3E%3C/svg%3E");
+    --glazor-icon-layout: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 2h6v3H1zM9 2h6v3H9zM1 6.5h6v3H1zM9 6.5h6v3H9zM1 11h6v3H1zM9 11h6v3H9z'/%3E%3C/svg%3E");
+    --glazor-icon-chevron-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M12 1L4 8l8 7z'/%3E%3C/svg%3E");
+    --glazor-icon-chevron-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 1l8 7-8 7z'/%3E%3C/svg%3E");
+    --glazor-icon-first-row: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 2h2v12H2zM13 2L6 8l7 6z'/%3E%3C/svg%3E");
+    --glazor-icon-prev-page: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2L1 8l7 6zM15 2L8 8l7 6z'/%3E%3C/svg%3E");
+    --glazor-icon-prev-row: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M11 2L4 8l7 6z'/%3E%3C/svg%3E");
+    --glazor-icon-next-row: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5 2l7 6-7 6z'/%3E%3C/svg%3E");
+    --glazor-icon-next-page: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 2l7 6-7 6zM8 2l7 6-7 6z'/%3E%3C/svg%3E");
+    --glazor-icon-last-row: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M12 2h2v12h-2zM3 2l7 6-7 6z'/%3E%3C/svg%3E");
+    --glazor-icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M6.5 1a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11zm0 2a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm4 9l1.5-1.5 3.5 3.5-1.5 1.5z'/%3E%3C/svg%3E");
+    --glazor-icon-row: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 2h4v3H1zM7 2h8v3H7zM1 6.5h4v3H1zM7 6.5h8v3H7zM1 11h4v3H1zM7 11h8v3H7z'/%3E%3C/svg%3E");
+    --glazor-icon-error: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 0a8 8 0 1 1 0 16a8 8 0 1 1 0-16zM8 9.41L5.88 11.54L4.46 10.12L6.59 8L4.46 5.88L5.88 4.46L8 6.59L10.12 4.46L11.54 5.88L9.41 8L11.54 10.12L10.12 11.54z'/%3E%3C/svg%3E");
+    --glazor-icon-reload: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M9 2.6A5.5 5.5 0 1 0 13.4 7' fill='none' stroke='black' stroke-width='1.8'/%3E%3Cpath d='M8.5 0L12.5 2.6L8.5 5.2z'/%3E%3C/svg%3E");
+    --glazor-icon-scroll-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 3l6 8H2z'/%3E%3C/svg%3E");
+    --glazor-icon-scroll-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 5h12l-6 8z'/%3E%3C/svg%3E");
+    --glazor-icon-scroll-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13 2L5 8l8 6z'/%3E%3C/svg%3E");
+    --glazor-icon-scroll-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 2l8 6-8 6z'/%3E%3C/svg%3E");
+    --glazor-icon-move-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M7.25 14V5.4L3.5 9.2 2.1 7.8 8 1.9l5.9 5.9-1.4 1.4-3.75-3.8V14z'/%3E%3C/svg%3E");
+    --glazor-icon-move-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8.75 2v8.6l3.75-3.8 1.4 1.4L8 14.1 2.1 8.2l1.4-1.4 3.75 3.8V2z'/%3E%3C/svg%3E");
+    --glazor-icon-editing: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M11.5 1.5l3 3-9 9H2.5v-3zM3.5 11v1.5H5l7.5-7.5L11 3.5z'/%3E%3C/svg%3E");
+    --glazor-icon-inserting: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6.75 1h2.5v14h-2.5z'/%3E%3Cpath d='M6.75 1h2.5v14h-2.5z' transform='rotate(60 8 8)'/%3E%3Cpath d='M6.75 1h2.5v14h-2.5z' transform='rotate(-60 8 8)'/%3E%3C/svg%3E");
+    --glazor-icon-current: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 2l8 6-8 6z'/%3E%3C/svg%3E");
+    --glazor-icon-tree-expand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1 1h14v14H1zm1 1v12h12V2zm5 2h2v3h3v2H9v3H7V9H4V7h3z'/%3E%3C/svg%3E");
+    --glazor-icon-tree-collapse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1 1h14v14H1zm1 1v12h12V2zm2 5h8v2H4z'/%3E%3C/svg%3E");
+    --glazor-icon-zoom-in: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='6.5' cy='6.5' r='4.75' fill='none' stroke='black' stroke-width='1.5'/%3E%3Cpath d='M10 11l1-1 4 4-1 1zM5.75 4h1.5v1.75H9v1.5H7.25V9h-1.5V7.25H4v-1.5h1.75z'/%3E%3C/svg%3E");
+    --glazor-icon-zoom-out: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='6.5' cy='6.5' r='4.75' fill='none' stroke='black' stroke-width='1.5'/%3E%3Cpath d='M10 11l1-1 4 4-1 1zM4 5.75h5v1.5H4z'/%3E%3C/svg%3E");
+    --glazor-icon-zoom-out-all: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5l6.5 6H12.5V14H9.5v-4h-3v4H3.5V7.5H1.5z'/%3E%3C/svg%3E");
+    --glazor-icon-insert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M7 2h2v5h5v2H9v5H7V9H2V7h5z'/%3E%3C/svg%3E");
+    --glazor-icon-remove: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 1h4v1h4v2H2V2h4zM3 5h10l-1 10H4zm2.5 2v6h1V7zm4 0v6h1V7z'/%3E%3C/svg%3E");
+    --glazor-icon-post: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 13.4L1.3 8.7l1.4-1.4L6 10.6l7.3-7.3 1.4 1.4z'/%3E%3C/svg%3E");
+    --glazor-icon-cancel: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.4 2L8 6.6 12.6 2 14 3.4 9.4 8l4.6 4.6-1.4 1.4L8 9.4 3.4 14 2 12.6 6.6 8 2 3.4z'/%3E%3C/svg%3E");
+}
+
+/* An icon is a span that masks its own colour with one of the shapes above: it follows the text colour, or the accent. */
+.glazor.icon {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    background-color: currentColor;
+    -webkit-mask: var(--icon) center / contain no-repeat;
+    mask: var(--icon) center / contain no-repeat;
+}
+.glazor.icon.accent {
+    color: var(--glazor-icon-accent);
+}
+.glazor.icon.sort-asc {
+    --icon: var(--glazor-icon-sort-asc);
+    width: 14px;
+    height: 10px;
+}
+.glazor.icon.sort-desc {
+    --icon: var(--glazor-icon-sort-desc);
+    width: 14px;
+    height: 10px;
+}
+.glazor.icon.filter {
+    --icon: var(--glazor-icon-filter);
+    width: 11px;
+    height: 11px;
+}
+.glazor.icon.layout {
+    --icon: var(--glazor-icon-layout);
+    width: 16px;
+    height: 16px;
+}
+/* as wide as the arrow they draw, which is narrower than its shape's square, so that they fit the grid's narrow columns */
+.glazor.icon.chevron-left {
+    --icon: var(--glazor-icon-chevron-left);
+    width: 8px;
+    height: 15px;
+    -webkit-mask-size: 11px;
+    mask-size: 11px;
+}
+.glazor.icon.chevron-right {
+    --icon: var(--glazor-icon-chevron-right);
+    width: 8px;
+    height: 15px;
+    -webkit-mask-size: 11px;
+    mask-size: 11px;
+}
+.glazor.icon.editing {
+    --icon: var(--glazor-icon-editing);
+}
+.glazor.icon.inserting {
+    --icon: var(--glazor-icon-inserting);
+    width: 11px;
+    height: 11px;
+}
+.glazor.icon.current {
+    --icon: var(--glazor-icon-current);
+    width: 6px;
+    height: 9px;
+}
+.glazor.icon.tree-expand {
+    --icon: var(--glazor-icon-tree-expand);
+    width: 11px;
+    height: 11px;
+    margin: 0 4px;
+}
+.glazor.icon.tree-collapse {
+    --icon: var(--glazor-icon-tree-collapse);
+    width: 11px;
+    height: 11px;
+    margin: 0 4px;
+}
+.glazor.icon.single-left {
+    --icon: var(--glazor-icon-prev-row);
+}
+.glazor.icon.single-right {
+    --icon: var(--glazor-icon-next-row);
+}
+.glazor.icon.double-left {
+    --icon: var(--glazor-icon-prev-page);
+}
+.glazor.icon.double-right {
+    --icon: var(--glazor-icon-next-page);
+}
+
+dialog.glazor.layoutDefDlg table.grigliaria tbody td {
+    font-size: 9pt;
+}
+dialog.glazor.rowViewDlg table.grigliaria tbody td.separator {
+    font-weight: 600;
+    background-color: var(--glazor-popup-hover-bg);
+}
+/* the column names, drawn as the fixed column's header whatever the row */
+dialog.glazor.rowViewDlg table.grigliaria tbody td.label {
+    background-color: var(--glazor-header-fixed-bg);
+    border: 1px solid var(--glazor-header-border);
+    color: var(--glazor-header-fg);
+    font-size: 9pt;
+    font-weight: bold;
+}
+dialog.glazor.rowViewDlg table.grigliaria tbody tr.current td.label {
+    background-color: color-mix(in srgb, var(--glazor-header-fixed-bg) 50%, var(--glazor-row-current-bg));
+}
+
+/* https://css-tricks.com/almanac/properties/l/line-clamp/ */
+.glazor.clamper .ellipsis {
+    text-overflow: ellipsis;
+    /* Needed to make it work */
+    overflow: hidden;
+    white-space: nowrap;
+}
+.glazor.clamper .over-ellipsis {
+    background: linear-gradient( to left, var(--glazor-clamper-mark) 20px, transparent 20px );
+}
+
+/* https://stackoverflow.com/questions/17893823/how-to-pass-parameters-to-css-classes */
+.glazor.clamper .line-clamp {
+    --lines-to-clamp: 2;
+    display: -webkit-box;
+    -webkit-line-clamp: var(--lines-to-clamp);
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* the native controls (checkboxes, radios, date pickers, the popups' scrollbars) follow the theme, not the page */
+div.glazor.grigliaria,
+dialog.glazor.dialog,
+dialog.glazor.popup {
+    color-scheme: var(--glazor-color-scheme);
+}
+
+dialog.glazor.dialog {
+    z-index: 1; /*  to avoid opacity strange effects ... */
+    background-color: var(--glazor-popup-bg);
+    color: var(--glazor-fg);
+}
+dialog.glazor.dialog::backdrop {
+    background-color: var(--glazor-backdrop);
+    pointer-events: none;
+}
+
+/* the grid's own dialogs: room around the content, a title, the fields and the buttons in line, with or without a CSS
+   framework on the page */
+dialog.glazor.filterDefDlg,
+dialog.glazor.layoutDefDlg,
+dialog.glazor.rowViewDlg {
+    padding: 14px 18px;
+}
+dialog.glazor.filterDefDlg .title,
+dialog.glazor.layoutDefDlg .title,
+dialog.glazor.rowViewDlg .title {
+    margin: 0 0 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+dialog.glazor.filterDefDlg .content > div > table td {
+    padding: 3px 6px;
+}
+dialog.glazor.filterDefDlg input:not([type=checkbox]):not([type=radio]),
+dialog.glazor.searchPopup input {
+    padding: 3px 6px;
+    border: 1px solid var(--glazor-popup-border);
+    border-radius: 4px;
+    background-color: var(--glazor-popup-bg);
+    color: var(--glazor-fg);
+}
+dialog.glazor.filterDefDlg .buttons button,
+dialog.glazor.layoutDefDlg .buttons button,
+dialog.glazor.layoutDefDlg button.move,
+dialog.glazor.rowViewDlg .buttons button {
+    padding: 5px 14px;
+    border: 1px solid var(--glazor-popup-border);
+    border-radius: 4px;
+    background-color: var(--glazor-button-bg);
+    color: var(--glazor-button-fg);
+    font: inherit;
+    cursor: pointer;
+}
+dialog.glazor.filterDefDlg .buttons button,
+dialog.glazor.layoutDefDlg .buttons button,
+dialog.glazor.rowViewDlg .buttons button.ok {
+    min-width: 72px;
+}
+dialog.glazor.layoutDefDlg button.move,
+dialog.glazor.rowViewDlg .buttons button.move {
+    width: 30px;
+    padding: 4px 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+dialog.glazor.layoutDefDlg button .glazor.icon,
+dialog.glazor.rowViewDlg .buttons button .glazor.icon {
+    width: 16px;
+    height: 16px;
+}
+dialog.glazor.filterDefDlg .buttons button:hover:not(:disabled),
+dialog.glazor.layoutDefDlg button:hover:not(:disabled),
+dialog.glazor.rowViewDlg .buttons button:hover:not(:disabled) {
+    background-color: var(--glazor-popup-hover-bg);
+}
+dialog.glazor.filterDefDlg .buttons button:disabled,
+dialog.glazor.layoutDefDlg button:disabled,
+dialog.glazor.rowViewDlg .buttons button:disabled {
+    opacity: .6;
+    cursor: default;
+}
+dialog.glazor.filterDefDlg .buttons button.ok,
+dialog.glazor.layoutDefDlg .buttons button.ok,
+dialog.glazor.rowViewDlg .buttons button.ok {
+    background-color: var(--glazor-primary-bg);
+    border-color: var(--glazor-primary-bg);
+    color: var(--glazor-primary-fg);
+}
+dialog.glazor.filterDefDlg .buttons button.ok:hover:not(:disabled),
+dialog.glazor.layoutDefDlg .buttons button.ok:hover:not(:disabled),
+dialog.glazor.rowViewDlg .buttons button.ok:hover:not(:disabled) {
+    background-color: var(--glazor-primary-bg);
+    filter: brightness(.9);   /* a darker shade: opacity would let the backdrop through and lower the text's contrast */
+}
+
+dialog.glazor.popup {
+    z-index: 1; /*  to avoid opacity strange effects ... */
+    outline: none;
+    margin: 0;
+    padding: 2px;
+    border-radius: 4px;
+    box-shadow: var(--glazor-overlay-shadow);
+    background: var(--glazor-popup-bg);
+    color: var(--glazor-fg);
+}
+a.glazor.disabled {
+    text-decoration: none;
+    opacity: .50;   /* the children inherit it: a rule of their own would compound it */
+}
+
+dialog.glazor.spinner-container {
+    border: none;
+    background: none;
+    outline: none;
+    overflow: visible;
+}
+dialog.glazor.spinner-container::backdrop {
+    background-color: var(--glazor-spinner-backdrop);
+}
+
+/* AppLoading, until the layout's Spinner is in the page */
+.glazor.app-loading {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;   /* left on a page with no Spinner, it would block it */
+}
+body:has(dialog.glazor.spinner-container) .glazor.app-loading {
+    display: none;
+}
+
+dialog.glazor.clamper-popup {
+    background-color: var(--glazor-clamper-popup-bg);
+    border: 1px solid var(--glazor-clamper-popup-border);
+    z-index: 1; /*  to avoid opacity strange effects with bootstrap */
+}
+
+dialog.glazor.message-popup {
+    background-color: var(--glazor-message-bg);
+    border: 1px solid var(--glazor-message-border);
+    z-index: 10; /*  to avoid opacity strange effects with bootstrap... which uses 5 sometimes */
+    min-width: 10em;
+    text-align: start;   /* not the alignment of the cell it is rendered in */
+}
+
+/* a disc with a cross cut out, in the icon's colour over a disc of the background colour, which shows through the cross */
+i.glazor.message-icon {
+    display: inline-block;
+    position: relative;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    color: var(--glazor-message-icon);
+    background: radial-gradient(circle, var(--glazor-message-icon-bg) 70%, transparent 70%);
+}
+i.glazor.message-icon::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: currentColor;
+    -webkit-mask: var(--glazor-icon-error) center / contain no-repeat;
+    mask: var(--glazor-icon-error) center / contain no-repeat;
+}
+
+/* Treegliaria's buttons to zoom in and out, and the path to the folder zoomed on, each folder above it a link to zoom out to */
+.glazor.zoombar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    background: var(--glazor-header-fixed-bg);
+    color: var(--glazor-header-fg);
+    border: 1px solid var(--glazor-header-border);
+    border-bottom: none;
+}
+.glazor.zoombar button {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid var(--glazor-popup-border);
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--glazor-button-bg);
+    color: var(--glazor-button-fg);
+    cursor: pointer;
+}
+.glazor.zoombar button:hover:not(:disabled) {
+    background-color: var(--glazor-popup-hover-bg);
+}
+.glazor.zoombar button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+.glazor.zoombar button::before {
+    content: "";
+    display: block;
+    width: 14px;
+    height: 14px;
+    background-color: currentColor;
+    -webkit-mask: var(--icon) center / contain no-repeat;
+    mask: var(--icon) center / contain no-repeat;
+}
+.glazor.zoombar button.btnZoomIn {
+    --icon: var(--glazor-icon-zoom-in);
+}
+.glazor.zoombar button.btnZoomOut {
+    --icon: var(--glazor-icon-zoom-out);
+}
+.glazor.zoombar button.btnZoomOutAll {
+    --icon: var(--glazor-icon-zoom-out-all);
+    margin-right: 6px;
+}
+.glazor.zoombar a.enabled {
+    color: var(--glazor-link);
+}
+.glazor.zoombar .sep {
+    opacity: 0.6;
+}
+.glazor.zoombar [aria-current] {
+    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* A row edited in place: each editor fills its cell, with its validation message in the upper left corner */
+.glazor.editor {
+    position: relative;
+}
+.glazor.editor .glazor.editor-input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 3px 7px;
+    font: inherit;
+    color: inherit;
+    color-scheme: var(--glazor-color-scheme);
+    background: var(--glazor-editor-bg, var(--glazor-popup-bg));
+    border: 1px solid var(--glazor-editor-border, var(--glazor-header-border));
+    border-radius: 6px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.glazor.editor .glazor.editor-input:focus {
+    outline: none;
+    border-color: var(--glazor-editor-focus, var(--glazor-primary-bg));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--glazor-editor-focus, var(--glazor-primary-bg)) 25%, transparent);
+}
+.glazor.editor .glazor.editor-input.invalid {
+    border-color: var(--glazor-message-border);
+}
+.glazor.editor input[type=checkbox].glazor.editor-input {
+    width: auto;
+    margin: 0;
+    accent-color: var(--glazor-editor-focus, var(--glazor-primary-bg));
+}
+.glazor.editor input[type=checkbox].glazor.editor-input:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--glazor-editor-focus, var(--glazor-primary-bg)) 25%, transparent);
+}
+.glazor.editor i.glazor.editor-message {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    z-index: 6;
+}
+.glazor.rowedit {
+    display: inline-flex;
+    gap: 2px;
+}
+.glazor.rowedit button {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 1px solid var(--glazor-popup-border);
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--glazor-button-bg);
+    color: var(--glazor-button-fg);
+    cursor: pointer;
+}
+.glazor.rowedit button:hover {
+    background-color: var(--glazor-popup-hover-bg);
+}
+.glazor.rowedit button::before {
+    content: "";
+    display: block;
+    width: 12px;
+    height: 12px;
+    background-color: currentColor;
+    -webkit-mask: var(--icon) center / contain no-repeat;
+    mask: var(--icon) center / contain no-repeat;
+}
+.glazor.rowedit button.btnRowCancel {
+    --icon: var(--glazor-icon-cancel);
+}
+.glazor.rowedit button.btnRowPost {
+    --icon: var(--glazor-icon-post);
+}
+.glazor.rowedit button.btnRowPost.invalid {
+    color: var(--glazor-message-icon);
+    border-color: var(--glazor-message-icon);
+}
+i.glazor.row-errors {
+    margin-left: 2px;
+}
+/* out of the layout, so the cell keeps its height; no offsets, so it stays where it is in the Tab order and the focus */
+.glazor.edit-edge {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    outline: none;
+}
+/* a cell with a value of the row edited in place, reached with Tab */
+table.glazor.grigliaria tr.edited > td.data[tabindex="0"]:focus {
+    outline: 2px solid var(--glazor-editor-focus, var(--glazor-primary-bg));
+    outline-offset: -2px;
+}

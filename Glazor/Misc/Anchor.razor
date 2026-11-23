@@ -1,0 +1,40 @@
+﻿@namespace Glazor.Misc
+
+@if (Disabled) {
+    <a @attributes="AdditionalAttributes" role="link" aria-disabled="true" class="glazor disabled @HostClass" title="@Title">
+        @ChildContent
+    </a>
+}
+else {
+    <a @attributes="AdditionalAttributes" href="#" @onclick="@OnClick" @onclick:preventDefault class="glazor enabled @HostClass" title="@Title">
+        @ChildContent
+    </a>
+}
+
+@code {
+
+    /// <summary>The link's content.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Refuses the click; the link keeps its role and name, marked <c>aria-disabled</c>.</summary>
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    /// <summary>Required. Raised on a click, without navigating.</summary>
+    [Parameter, EditorRequired]
+    public EventCallback OnClick { get; set; }
+
+    /// <summary>The link's <c>title</c>.</summary>
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// Any other attribute goes on the anchor: <c>aria-expanded</c>, <c>aria-label</c>, <c>data-*</c>; a <c>class</c> is added to
+    /// the anchor's own, and the attributes the anchor sets itself win.
+    /// </summary>
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private object? HostClass => AdditionalAttributes?.GetValueOrDefault("class");
+}

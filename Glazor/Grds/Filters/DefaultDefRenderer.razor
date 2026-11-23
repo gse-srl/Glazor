@@ -1,0 +1,36 @@
+﻿@namespace Glazor.Grds.Filters
+
+@using Microsoft.AspNetCore.Components.Forms
+
+@inherits AFilterDefRenderer<DefaultDef>
+
+<div>
+    <table>
+    @if (NullableValue) {
+    <tr>
+        <td><label for="@($"{IdPrefix}_include")">@Texts.Get(TextKeys.IncludeNull): </label></td>
+        <td><InputCheckbox id="@($"{IdPrefix}_include")" @bind-Value="FilterDef.IncludeNull"/></td>
+    </tr>
+    }
+    <tr>
+        <td><label for="@($"{IdPrefix}_contains")">@Texts.Get(TextKeys.Contains): </label></td>
+        <td><InputCheckbox id="@($"{IdPrefix}_contains")" @bind-Value="FilterDef.Contains"/></td>
+    </tr>
+    <tr>
+        <td><label for="@($"{IdPrefix}_value")">@Texts.Get(TextKeys.Value): </label></td>
+        <td><InputText id="@($"{IdPrefix}_value")" @ref="valueRef" @bind-Value="FilterDef.Value"/></td>
+    </tr>
+    </table>
+</div>
+
+@code {
+    private InputText? valueRef;
+
+    /// <inheritdoc/>
+    protected internal override async ValueTask ShownAsync()
+    {
+        ElementReference? vt = valueRef?.Element;
+        if (vt.HasValue)
+            await vt.Value.FocusAsync();
+    }
+}

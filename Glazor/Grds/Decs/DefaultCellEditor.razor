@@ -1,0 +1,170 @@
+﻿@namespace Glazor.Grds.Decs
+
+@using System.Linq.Expressions
+@using System.Reflection
+@using Glazor.Misc
+@using Microsoft.AspNetCore.Components.Forms
+
+@typeparam TGridItem
+
+@* A cell of the row a grid edits in place: the column's edit template, or an input chosen by the type of its edit property,
+   with its validation message in the upper left corner *@
+
+<td @key="@("td" + Param.RowIdx + "c" + Param.ColIdx)" align="@_align" style="@Style" class="data editing" @ref="_td"
+        tabindex="@(Param.Column.GetEditRenderer() != null ? "-1" : _editor == null ? "0" : null)"
+        @onfocusin="@(() => Param.Grid.EditCellFocused(ColumnName))">
+    <div class="glazor editor">
+        <CascadingValue Value="EditContext">
+            @if (Param.Column.GetEditRenderer() is { } renderer)
+            {
+                @renderer(new DecoratorContext<TGridItem, object>(Item, Param.Model.GetValue(Item, Param.ColIdx), Param.RowIdx, Param.Column))
+            }
+            else if (_editor is { } editor)
+            {
+                <DynamicComponent Type="editor.Input" Parameters="editor.Parameters" @ref="_input" />
+                <DynamicComponent Type="editor.Message" Parameters="editor.MessageParameters" />
+            }
+            else
+            {
+                @(Param.Column.GetEditProperty()?.GetValue(Item))   @* a type with no input: shown as it is *@
+            }
+        </CascadingValue>
+    </div>
+    @if (Param.Grid.HasEditEdge(ColumnName, -1))
+    {
+        <EditEdge TGridItem="TGridItem" Grid="@Param.Grid" Step="-1" />
+    }
+    @if (Param.Grid.HasEditEdge(ColumnName, 1))
+    {
+        <EditEdge TGridItem="TGridItem" Grid="@Param.Grid" Step="1" />
+    }
+</td>
+
+@code {
+    private static readonly MethodInfo _editorFor =
+        typeof(DefaultCellEditor<TGridItem>).GetMethod(nameof(EditorFor), BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    /// <summary>The cell to draw, as the grid's <c>CellTemplate</c> receives it.</summary>
+    [Parameter] public IGrigliaria<TGridItem>.CellTemplateParam Param { get; set; } = null!;
+    /// <summary>The row's, which validates the editors.</summary>
+    [Parameter] public EditContext EditContext { get; set; } = null!;
+    /// <summary>The row being edited.</summary>
+    [Parameter] public TGridItem Item { get; set; } = default!;
+    /// <summary>The cell's alignment under an edit template; a default editor follows the column, or its property's type.</summary>
+    [Parameter] public string? Align { get; set; }
+    /// <summary>Styles added to the cell's own.</summary>
+    [Parameter] public string? Style { get; set; }
+
+    // The default input and its message, with the parameters DynamicComponent passes them
+    private sealed record Editor(object? Item, PropertyInfo Property, Type Input, Dictionary<string, object?> Parameters,
+        Type Message, Dictionary<string, object?> MessageParameters);
+
+    private string? _align;
+    private Editor? _editor;
+    private DynamicComponent? _input;
+    private ElementReference _td;   // focused for an edit template, which focuses its own fields, or a value with no input
+
+    private string ColumnName => Param.Model.GetColumnName(Param.ColIdx);
+
+    /// <inheritdoc/>
+    protected override void OnParametersSet()
+    {
+        _align = AlignmentOf(Param.Column)?.ToString().ToLowerInvariant() ?? Align;
+        if (Param.Column.GetEditRenderer() != null || Param.Column.GetEditProperty() is not { } p)
+            _editor = null;
+        else if (_editor == null || !ReferenceEquals(_editor.Item, Item) || _editor.Property != p)   // one expression per edit, as InputBase expects
+            _editor = (Editor?)_editorFor.MakeGenericMethod(p.PropertyType).Invoke(this, [p]);
+        else
+            _editor.Parameters["Value"] = p.GetValue(Item);
+    }
+
+    private Editor? EditorFor<T>(PropertyInfo p)
+    {
+        Type type = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+        if (InputFor(type, typeof(T)) is not { } input)
+            return null;
+        TGridItem item = Item;
+        Expression<Func<T>> value = Expression.Lambda<Func<T>>(Expression.Property(Expression.Constant(item, typeof(TGridItem)), p));
+        Dictionary<string, object?> parameters = new()
+        {
+            ["Value"] = p.GetValue(item),
+            ["ValueExpression"] = value,
+            ["DisplayName"] = Param.Column.GetLabel(),   // what a typing error names
+            ["class"] = "glazor editor-input",
+            ["style"] = $"text-align: {_align}",
+        };
+        // The value passed back too: this cell renders again after each change, and a stale one would undo it
+        parameters["ValueChanged"] = EventCallback.Factory.Create<T>(this, v =>
+        {
+            p.SetValue(item, v);
+            parameters["Value"] = v;
+        });
+        if (type == typeof(TimeOnly))
+            parameters["Type"] = InputDateType.Time;
+        else if (type == typeof(DateTime) || type == typeof(DateTimeOffset))
+            parameters["Type"] = InputDateType.DateTimeLocal;   // as DateDef.GetInputDateType: a date input would drop the time
+        if (type.IsEnum)
+            parameters["ChildContent"] = Options(type, type != typeof(T));
+        return new(item, p, input, parameters, typeof(PopupValidationMessage<T>), new()
+        {
+            ["For"] = value,
+            ["Class"] = "glazor editor-message",
+            ["ShowWhenMouseOver"] = true,
+        });
+    }
+
+    // The column's, or else as a value of the edit property's type is shown: numbers right, dates, enums and bools centered
+    private static Alignment? AlignmentOf(IColumn<TGridItem> column)
+    {
+        if (column.GetAlignment() != Alignment.Default)
+            return column.GetAlignment();
+        if (column.GetEditRenderer() != null || column.GetEditProperty() is not { } p)
+            return null;
+        Type type = Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType;
+        return type.IsNumber() ? Alignment.Right
+            : type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(DateOnly) || type == typeof(TimeOnly) || type.IsEnum || type == typeof(bool) ? Alignment.Center
+            : Alignment.Left;
+    }
+
+    // The input for a value type, as the filter factory chooses a filter
+    private static Type? InputFor(Type type, Type declared)
+    {
+        if (type == typeof(string))
+            return typeof(InputText);
+        if (declared == typeof(bool))
+            return typeof(InputCheckbox);
+        if (type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(float) || type == typeof(double)
+                || type == typeof(decimal))
+            return typeof(InputNumber<>).MakeGenericType(declared);
+        if (type == typeof(DateTime) || type == typeof(DateOnly) || type == typeof(TimeOnly) || type == typeof(DateTimeOffset))
+            return typeof(InputDate<>).MakeGenericType(declared);
+        if (type.IsEnum)
+            return typeof(InputSelect<>).MakeGenericType(declared);
+        return null;
+    }
+
+    private static RenderFragment Options(Type enumType, bool nullable) => __builder =>
+    {
+        if (nullable)
+        {
+            <option value=""></option>
+        }
+        foreach (Enum option in Enum.GetValues(enumType))
+        {
+            <option value="@option">@option.GetDescription()</option>
+        }
+    };
+
+    /// <inheritdoc/>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_input?.Instance is { } input)
+        {
+            if (Param.Grid.ClaimEditorFocus(ColumnName, editor: true)
+                    && input.GetType().GetProperty("Element")?.GetValue(input) is ElementReference element)
+                await element.FocusAsync();
+        }
+        else if (Param.Grid.ClaimEditorFocus(ColumnName, editor: false))
+            await _td.FocusAsync();
+    }
+}

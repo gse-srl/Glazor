@@ -1,0 +1,52 @@
+﻿/* The dark theme: the --glazor-* custom properties of glazor.css with dark values. Link it after glazor.css to turn the
+   whole page dark, or copy its block under a media query or an ancestor's selector to apply it where you want. The
+   icons keep the shapes of glazor.css and take the colours below. */
+:root {
+    --glazor-color-scheme: dark;
+    --glazor-fg: #e6e4de;
+    --glazor-link: #8fb6dd;
+    --glazor-header-bg: #2b2f36;
+    --glazor-header-fixed-bg: #343941;
+    --glazor-header-fg: #d0d4da;
+    --glazor-header-border: #4a505a;
+    --glazor-rule: #4a505a;
+    --glazor-row-odd-bg: #1e2126;
+    --glazor-row-even-bg: #23272d;
+    --glazor-row-current-bg: #2f3a55;
+    --glazor-row-edited-bg: #3a3f6a;
+    --glazor-cell-current-bg: #3b4a75;
+    --glazor-no-data-fg: #9aa0a8;
+    --glazor-focus-outline: #7fb3ff;
+    --glazor-tree-indent: #3c424b;
+    --glazor-scroll-track-bg: #2a2e34;
+    --glazor-scroll-handle-bg: #4a5a80;
+    --glazor-scroll-button-bg: #3a3f47;
+    --glazor-button-bg: #343941;
+    --glazor-button-fg: #e6e4de;
+    --glazor-primary-bg: #3b6aa3;
+    --glazor-primary-fg: #ffffff;
+    --glazor-popup-bg: #23272d;
+    --glazor-popup-border: #3c424b;
+    --glazor-popup-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+    --glazor-popup-hover-bg: #2f343b;
+    --glazor-overlay-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    --glazor-backdrop: rgba(0, 0, 0, 0.6);
+    --glazor-spinner: #cfe8ff;
+    --glazor-spinner-backdrop: rgba(0, 0, 0, 0.5);
+    --glazor-clamper-mark: #806000;
+    --glazor-clamper-popup-bg: #23272d;
+    --glazor-clamper-popup-border: #9aa0a8;
+    --glazor-message-bg: #23272d;
+    --glazor-message-border: #ff6b6b;
+    --glazor-message-icon: #ff6b6b;
+    --glazor-message-icon-bg: #23272d;
+    --glazor-icon-accent: #ffa94d;
+    --glazor-tab-border: #4a505a;
+    --glazor-tab-secondary-border: #4a505a;
+    --glazor-tab-bg: #1e2126;
+    --glazor-tab-label-inactive-bg: #2b2f36;
+    --glazor-tab-label-disabled-bg: #262a30;
+    --glazor-tab-label-fg: #e6e4de;
+    --glazor-tab-label-inactive-fg: #9aa0a8;
+    --glazor-tab-label-disabled-fg: #6b7078;
+}

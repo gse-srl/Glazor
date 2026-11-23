@@ -1,0 +1,167 @@
+﻿@namespace Glazor.Grds.Decs
+
+@using Glazor.Grds.Mdls
+@using Glazor.Misc
+@inject IServiceProvider Services
+
+@typeparam TGridItem
+
+@code {
+
+    /// <summary>The header cell to draw, as <c>HCellTemplate</c> receives it.</summary>
+    [Parameter]
+    public IGrid<TGridItem>.HCellTemplateParam Param { get; set; } = null!;
+
+    private Popup? _columnPopup;
+    private IGlazorTexts? _texts;
+    private IGlazorTexts Texts => _texts ??= GlazorTexts.Resolve(Services);
+}
+
+@{
+    string label = Param.Column.GetLabel();
+    string colName = Param.Model.GetColumnName(Param.ColIdx);
+    var dataGrid = Param.Grid as ADataGrid<TGridItem>;
+    bool sortable = false;
+    bool filterable = false;
+    string? sortedColumn = null;
+    SortType sortedType = SortType.None;
+    IDataGridModel<TGridItem>? dgModel = null;
+    if (Param.Model is IDataGridModel<TGridItem> _dgModel) {
+        dgModel = _dgModel;
+        sortable = dgModel.IsSortable();
+        filterable = dgModel.IsFilterable();
+        sortedColumn = dgModel.GetSortedColumn();
+        sortedType = dgModel.GetSortType();
+    }
+    RenderFragment<HDecoratorContext<TGridItem>>? rf = Param.Column.GetHRenderer();
+    RenderFragment hcontent = rf != null ? @rf(new HDecoratorContext<TGridItem>(Param.Column)) :
+        @<Clamper LinesToClamp="@Param.Column.GetHeaderLinesToClamp()">
+            @label
+        </Clamper>        
+    ;
+    List<RenderFragment?> columnPopupFragments = new();
+    string? ariaSort = sortable && Param.Column.IsSortable() ?
+        sortedColumn != colName ? "none" : sortedType switch { SortType.Asc => "ascending", SortType.Desc => "descending", _ => "none" } :
+        null;
+    <th class="@(Param.Column.IsFixed() ? "fixed" : "")" colspan="@Param.ColSpan" rowspan="@Param.RowSpan" scope="col" aria-sort="@ariaSort">
+        @if (!Param.Column.IsFixed() && dataGrid != null)
+        {
+            var firstNotFixedIdx = Param.ToShow.FirstNotFixedIdx;
+            var toShowIdx = Param.ToShow.Idx;
+            if (toShowIdx >= 0)
+            {
+                var colsToShow = Param.Grid.GetColumnsToShow();
+                columnPopupFragments.Add(@<Anchor Disabled="@(dgModel!.IsCurrentRowFrozen() || toShowIdx <= firstNotFixedIdx)" OnClick="@(async () =>
+                    {
+                        await _columnPopup!.CloseAsync();
+                        await dataGrid.ShiftColumnToShowAsync(toShowIdx, -1);
+                        await Param.Grid.RepaintAsync();
+                    })">
+                    @Texts.Get(TextKeys.ShiftLeft)
+                    </Anchor>);
+                columnPopupFragments.Add(@<Anchor Disabled="@(dgModel!.IsCurrentRowFrozen() || toShowIdx >= colsToShow.Count() - 1)" OnClick="@(async () =>
+                    {
+                        await _columnPopup!.CloseAsync();
+                        await dataGrid.ShiftColumnToShowAsync(toShowIdx, 1);
+                        await Param.Grid.RepaintAsync();
+                    })">
+                    @Texts.Get(TextKeys.ShiftRight)
+                    </Anchor>);
+            }
+        }
+        @if (sortable && Param.Column.IsSortable()) {
+            bool currentSortedCol = sortedColumn == colName;
+            SortType toSortType = !currentSortedCol ? SortType.Asc : sortedType switch {
+                SortType.Asc => SortType.Desc,
+                SortType.Desc => SortType.None,
+                _ => SortType.Asc
+            };
+            <Anchor Disabled="@dgModel!.IsCurrentRowFrozen()" OnClick="@(async () => 
+                {
+                    if (currentSortedCol) 
+                        dgModel!.SetSortedColumn(toSortType == SortType.None ? null : colName, toSortType == SortType.Asc);
+                    else
+                        dgModel!.SetSortedColumn(colName, toSortType == SortType.Asc);
+                    await Param.Grid.RepaintAsync();
+                })">
+                @hcontent
+                @if (sortedColumn != null && currentSortedCol && sortedType != SortType.None) {
+                    <span class="glazor icon accent @(sortedType == SortType.Asc ? "sort-asc" : "sort-desc")" aria-hidden="true"></span>
+                }
+            </Anchor>
+            if (columnPopupFragments.Any())
+                columnPopupFragments.Add(null);  // separator
+            columnPopupFragments.Add(@<Anchor Disabled="@(dgModel!.IsCurrentRowFrozen() || currentSortedCol && sortedType == SortType.Asc)" OnClick="@(async () => 
+                {
+                    await _columnPopup!.CloseAsync();
+                    dgModel.SetSortedColumn(colName, true);
+                    await Param.Grid.RepaintAsync();
+                })">
+                @Texts.Get(TextKeys.SortAscending) <span class="glazor icon accent sort-asc" aria-hidden="true"></span>
+                </Anchor>);
+            columnPopupFragments.Add(@<Anchor Disabled="@(dgModel!.IsCurrentRowFrozen() || currentSortedCol && sortedType == SortType.Desc)" OnClick="@(async () =>
+                {
+                    await _columnPopup!.CloseAsync();
+                    dgModel.SetSortedColumn(colName, false);
+                    await Param.Grid.RepaintAsync();
+                })">
+                @Texts.Get(TextKeys.SortDescending) <span class="glazor icon accent sort-desc" aria-hidden="true"></span>
+                </Anchor>);
+            columnPopupFragments.Add(@<Anchor Disabled="@(dgModel!.IsCurrentRowFrozen() || !currentSortedCol)" OnClick="@(async () =>
+                {
+                    await _columnPopup!.CloseAsync();
+                    dgModel.SetSortedColumn(null, true);
+                    await Param.Grid.RepaintAsync();
+                })">
+                @Texts.Get(TextKeys.NoSort)
+                </Anchor>);
+        }
+        else {
+            @hcontent
+        }
+        @if (filterable && Param.Column.IsFilterable() && dataGrid != null) {
+            <Anchor Disabled="@dgModel!.IsCurrentRowFrozen()" OnClick="@(async () => await dataGrid.ShowFilterDialogAsync(colName, null))"
+                Title="@Texts.Get(dataGrid.HasFilter(colName) ? TextKeys.FilterActive : TextKeys.Filter)">
+                <span class="glazor icon filter @(dataGrid.HasFilter(colName) ? "accent" : "")" aria-hidden="true"></span>
+            </Anchor>
+            if (columnPopupFragments.Any())
+                columnPopupFragments.Add(null);  // separator
+            columnPopupFragments.Add(@<Anchor Disabled="@dgModel!.IsCurrentRowFrozen()" OnClick="@(async () => 
+                {
+                    await _columnPopup!.CloseAsync();
+                    await dataGrid.ShowFilterDialogAsync(colName, null);
+                })">
+                @Texts.Get(TextKeys.FilterMenu)
+                </Anchor>);
+            columnPopupFragments.Add(@<Anchor Disabled="@(dgModel!.IsCurrentRowFrozen() || !dataGrid.HasFilter(colName))" OnClick="@(async () => 
+                {
+                    await _columnPopup!.CloseAsync();
+                    dataGrid.SetFilter(colName, null);
+                    await Param.Grid.RepaintAsync();
+                })">
+                @Texts.Get(TextKeys.ClearFilter)
+                </Anchor>);
+        }
+        @if (Param.Grid.ColumnsPopupEnabled && columnPopupFragments.Any())
+        {
+            <Popup @ref="_columnPopup" Class="columnPopup" OnClose="async () => await Param.Grid.CloseColumnPopupAsync()" Style="@($"position: fixed;")">
+                @foreach (var fragment in columnPopupFragments)
+                {
+                    if (fragment != null)
+                    {
+                        @fragment
+                    }
+                    else
+                    {
+                        <hr/>
+                    }
+                }
+                @* taken on the popup, so a host's own Escape around the grid does not see it *@
+                <KeyAction Key="Escape" OnKey="@(async evt => await _columnPopup!.CloseAsync())" BindAncestorWithTag="dialog"/>
+            </Popup>
+            <MouseAction Type="MouseAction.MouseType.ContextMenu" BindAncestorWithTag="th"
+                         OnMouse="@(async (evt) => await Param.Grid.OpenColumnPopupAsync(Param.ColIdx, _columnPopup.RequireNotNull(), evt.ClientX, evt.ClientY))"
+                Enabled="@(Param.Grid.ColumnsPopupEnabled)"/>
+        }
+    </th>
+}

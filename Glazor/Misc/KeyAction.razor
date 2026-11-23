@@ -1,0 +1,185 @@
+﻿@namespace Glazor.Misc
+
+@inject IJSRuntime JS
+@inject ILogger<KeyAction> Logger
+@implements IAsyncDisposable 
+
+<span @ref=spanRef hidden/>
+
+@code {
+    /// <summary>A <see cref="Key"/> that takes any printable character, reported in a burst through <see cref="KeyEvent.Chars"/>.</summary>
+    public const string AnyChars = "ANY_CHARS";
+
+    /// <summary>
+    /// AnyChars has a special meaning.<br/>
+    /// https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key
+    /// https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Key { get; set; } = null!;
+
+    /// <summary>Requires Shift held with the key.</summary>
+    [Parameter]
+    public bool ShiftKey { get; set; }
+
+    /// <summary>Requires Ctrl held with the key.</summary>
+    [Parameter]
+    public bool CtrlKey { get; set; }
+
+    /// <summary>Requires Alt held with the key. A key bound without it leaves Alt combinations to the browser, Alt+ArrowLeft being Back.</summary>
+    [Parameter]
+    public bool AltKey { get; set; }
+
+    /// <summary>Turns the handler off without unmounting it.</summary>
+    [Parameter]
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>Attaches to the nearest ancestor with this tag name; without it, to the parent element.</summary>
+    [Parameter]
+    public string? BindAncestorWithTag { get; set; }
+
+    /// <summary>
+    /// Before the action, fires <c>change</c> on the field the key was pressed in, as the browser does before a form's submit, so
+    /// an input bound on change has its value on the server first.
+    /// </summary>
+    [Parameter]
+    public bool CommitFocused { get; set; }
+
+    /// <summary>Required. Raised for the key, with the characters typed and the <c>name</c> and <c>id</c> of the element it landed on.</summary>
+    [Parameter, EditorRequired]
+    public EventCallback<KeyEvent> OnKey { get; set; }
+
+    private ElementReference spanRef;
+
+    private ElementReference _lastSpanRef;
+    private string? _lastKey;
+    private bool _lastShiftKey;
+    private bool _lastCtrlKey;
+    private bool _lastAltKey;
+    private bool _lastEnabled;
+    private string? _lastBindAncestorWithTag;
+    private bool _lastCommitFocused;
+
+    private IJSObjectReference? module;
+    // https://learn.microsoft.com/en-us/aspnet/core/blazor/javascript-interoperability/call-dotnet-from-javascript?view=aspnetcore-10.0
+    private DotNetObjectReference<KeyAction>? dotNetObjRef;
+
+    /// <inheritdoc/>
+    protected override void OnInitialized()
+    {
+        dotNetObjRef = DotNetObjectReference.Create(this);
+    }
+
+    /// <inheritdoc/>
+    protected override void OnParametersSet() => ArgumentException.ThrowIfNullOrEmpty(Key);
+
+    /// <inheritdoc/>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && module == null)
+        {
+            // https://learn.microsoft.com/en-us/aspnet/core/blazor/components/class-libraries?view=aspnetcore-10.0&tabs=visual-studio
+            IJSObjectReference imported = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Glazor/Misc/KeyAction.razor.js");
+            if (_disposed)
+            {
+                await imported.DisposeAsync();   // disposed while the import was in flight
+                return;
+            }
+            module = imported;
+        }
+        // It's not enough on firstRender and sometimes firstRender and !firstRender are executed "together"
+        if (module != null && !string.IsNullOrEmpty(spanRef.Id) && 
+                (spanRef.Id != _lastSpanRef.Id || Key != _lastKey 
+                    || ShiftKey != _lastShiftKey || CtrlKey != _lastCtrlKey || AltKey != _lastAltKey
+                    || Enabled != _lastEnabled || BindAncestorWithTag != _lastBindAncestorWithTag
+                    || CommitFocused != _lastCommitFocused))
+        {
+            // set before the first await: a render that arrives while this one waits finds it registered
+            var old = (_lastSpanRef, _lastKey, _lastShiftKey, _lastCtrlKey, _lastAltKey, _lastBindAncestorWithTag);
+            _lastSpanRef = spanRef;
+            _lastKey = Key;
+            _lastShiftKey = ShiftKey;
+            _lastCtrlKey = CtrlKey;
+            _lastAltKey = AltKey;
+            _lastEnabled = Enabled;
+            _lastBindAncestorWithTag = BindAncestorWithTag;
+            _lastCommitFocused = CommitFocused;
+            try {
+                await CleanupAsync(old._lastSpanRef, old._lastKey, old._lastShiftKey, old._lastCtrlKey, old._lastAltKey, old._lastBindAncestorWithTag, sendPending: true);
+                await module.RequireNotNull().InvokeVoidAsync("registerKeyboardHandler", spanRef, dotNetObjRef.RequireNotNull(),
+                        nameof(ProcessAsync), Key == AnyChars ? -1 : Key, ShiftKey, CtrlKey, Enabled, BindAncestorWithTag, CommitFocused, AltKey);
+            }
+            catch (ObjectDisposedException e) {
+                if (Logger.IsEnabled(LogLevel.Trace))
+                    Logger.LogTrace("As far as I know this can be safely ignored: {msg}", e.Message);
+            }
+        }
+    }
+
+    // sendPending: a key registered again sends the characters typed and still waiting; one disposed drops them
+    private ValueTask CleanupAsync(bool sendPending) =>
+        CleanupAsync(_lastSpanRef, _lastKey, _lastShiftKey, _lastCtrlKey, _lastAltKey, _lastBindAncestorWithTag, sendPending);
+
+    private async ValueTask CleanupAsync(ElementReference spanRef, string? key, bool shiftKey, bool ctrlKey, bool altKey, string? bindAncestorWithTag, bool sendPending)
+    {
+        if (key != null)
+        {
+            await module!.InvokeVoidAsync("cleanup", spanRef, bindAncestorWithTag, key == AnyChars ? -1 : key, shiftKey, ctrlKey, sendPending, altKey);
+        }
+    }
+
+    private bool _disposed;
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        _disposed = true;
+        if (module != null)
+        {
+            try
+            {
+                try
+                {
+                    await CleanupAsync(sendPending: false);
+                }
+                finally
+                {
+                    await module.DisposeAsync();
+                }
+            }
+            catch (Exception ex) when (ex is JSDisconnectedException or TaskCanceledException)
+            {
+                // Ignore
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error while disposing KeyAction");
+            }
+            module = null;
+        }
+        dotNetObjRef?.Dispose();
+        spanRef = default;
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Called by the JS side when the key is pressed.</summary>
+    [JSInvokable, System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]   // for the JS side, not for hosts
+    public async Task ProcessAsync(string? chars, string? name, string? id)
+    {
+        // Enabled is not checked again here: keys sent before the JS learned it turned off still count, as the type-ahead's
+        // characters typed while its search box opens
+        try
+        {
+            await OnKey.InvokeAsync(new KeyEvent(chars, name, id));
+        }
+        catch (Exception ex) when (!_disposed)
+        {
+            await DispatchExceptionAsync(ex);
+        }
+    }
+
+    /// <summary>A key pressed, as <c>OnKey</c> reports it.</summary>
+    /// <param name="Chars">With <see cref="AnyChars"/>, the characters typed in a burst; null for a named key.</param>
+    /// <param name="TargetName">The <c>name</c> attribute of the element the key was pressed in, if any.</param>
+    /// <param name="TargetId">The <c>id</c> attribute of the element the key was pressed in, if any.</param>
+    public record KeyEvent(string? Chars, string? TargetName, string? TargetId);
+}

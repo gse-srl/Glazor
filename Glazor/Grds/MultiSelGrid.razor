@@ -1,0 +1,62 @@
+﻿@typeparam TGridItem
+
+@using Microsoft.AspNetCore.Components.Forms
+@using Glazor.Grds.Decs
+@using Glazor.Misc
+
+@{
+    RenderFragment<IGrigliaria<TGridItem>.CellTemplateParam> cellTemplateAdapter = context => {
+        MultiSelGrid<TGridItem>.CellTemplateParam tp = new(this, GetWrappedModel(), context);
+        if (MultiSelCellTemplate != null) {
+            return @MultiSelCellTemplate(tp);
+        }
+        else {
+            return @<DefaultMultiSelCell Param="tp"/>;
+        }
+    };
+}
+
+<div class="glazor multiSelGrid" style="display:contents;">
+<Grigliaria @ref="_dataGrid" Model="GetWrappedModel()"
+        ShowRowNumber="@ShowRowNumber" HeaderHeight="@HeaderHeight" RowHeight="@RowHeight" OnModelChanged="ModelChanged"
+        PageSize="@PageSize" ShowNavigationButtons="@ShowNavigationButtons" ShowHeader="@ShowHeader" ShowColumnGroups="@ShowColumnGroups"
+        RowsPopupEnabled="@RowsPopupEnabled" OnRowPopup="@OnRowPopup" ColumnsPopupEnabled="@ColumnsPopupEnabled"
+        VertResizer="@VertResizer" ShowDefaultButtons="@ShowDefaultButtons"
+        HCellTemplate="@HCellTemplate" GHCellTemplate="@GHCellTemplate" EmptyRowCellTemplate="@EmptyRowCellTemplate"
+        CellCursorEnabled="@CellCursorEnabled" RowDialogEnabled="@RowDialogEnabled" ReloadEnabled="@ReloadEnabled" GotoLastKnown="@GotoLastKnown" TouchScrollerEnabled="@TouchScrollerEnabled"
+        HorzResizer="@HorzResizer" Layoutable="@Layoutable" FilterDefFactory="@FilterDefFactory"
+        RowHeadingTemplate="@RowHeadingTemplate" CellTemplate="@cellTemplateAdapter"
+        OnDblClick="DblClickAsync" OnLayoutChanged="LayoutChanged" OnStableItemChanged="OnStableItemChanged" OnTimeout="OnTimeout" ShouldReRenderTrick="@ShouldReRenderTrick" AriaLabel="@AriaLabel"
+        Spinner="Spinner"
+        >
+    <ChildContent>
+        @ChildContent
+        <EnrichGridColumn TGridItem="TGridItem" VT="bool" Name="@SelColName">
+            <HeaderDisplayTemplate>
+                <TriStateCheckbox @bind-Value="SelectAll" Disabled="ReadOnly || Model.IsCurrentRowFrozen() || !IsSelectAllSupported() || IsModelFiltered()" Title="@Texts.Get(TextKeys.SelectAll)"
+                    ToggleFn="value => value switch { true => false, false => true, _ => true }"/> @* Same as excel *@
+            </HeaderDisplayTemplate>
+            <DisplayTemplate>
+                @{
+                    int idx = context.RowIdx;  // otherwise: InvalidOperationException
+                    <InputCheckbox @bind-Value="selected[idx]" disabled="@(ReadOnly || Model.IsCurrentRowFrozen() || !SelectionModel.IsSelectionEnabled(context.Item))" aria-label="@Texts.Get(TextKeys.SelectRow)"/>
+                }
+            </DisplayTemplate>
+        </EnrichGridColumn>
+        @* space key*@
+        <KeyAction CtrlKey=true Key=" " OnKey="@(evt => ToggleCurrentRowSelection())" BindAncestorWithTag="div"
+            Enabled="@(!ReadOnly && !Model.IsCurrentRowFrozen())"/>
+    </ChildContent>
+</Grigliaria>
+@if (IsOrderable()) {
+    <div align="center" class="shiftBtns">
+    <button type="button" class="btnMoveRowUp" title="@Texts.Get(TextKeys.MoveRowUp)" aria-label="@Texts.Get(TextKeys.MoveRowUp)"
+        @onclick="@(async evt => await ShiftCurrentRowAsync(-1))"
+        disabled="@(!IsOrderable() || ReadOnly || Model.GetCurrentRow() <= 0 || Model.IsCurrentRowFrozen() || !IsCurrentRowShiftable(-1))"/>
+    <button type="button" class="btnMoveRowDown" title="@Texts.Get(TextKeys.MoveRowDown)" aria-label="@Texts.Get(TextKeys.MoveRowDown)"
+        @onclick="@(async evt => await ShiftCurrentRowAsync(1))"
+        disabled="@(!IsOrderable() || ReadOnly || Model.GetCurrentRow() >= Model.GetRowCount() - 1 || Model.IsCurrentRowFrozen() || !IsCurrentRowShiftable(1))"/>
+    </div>
+}
+</div>
+

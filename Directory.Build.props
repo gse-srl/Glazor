@@ -1,0 +1,30 @@
+﻿<Project>
+  <!-- One version for both packages: Glazor.EntityFrameworkCore depends on Glazor at exactly this version. -->
+  <PropertyGroup>
+    <AssemblyVersion>1.1.0</AssemblyVersion>
+    <FileVersion>$(AssemblyVersion)</FileVersion>
+    <Version>$(AssemblyVersion)</Version>
+    <Copyright>Copyright © 2025-2026 G.S.E. Servizi Evoluti s.r.l.</Copyright>
+  </PropertyGroup>
+
+  <!-- Shared by the two packages; the demo and the tests are not packed. -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'Glazor' Or '$(MSBuildProjectName)' == 'Glazor.EntityFrameworkCore'">
+    <Authors>Valentino Proietti and Ilaria Gagliardi</Authors>
+    <Company>G.S.E. Servizi Evoluti s.r.l.</Company>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageProjectUrl>https://github.com/gse-srl/Glazor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/gse-srl/Glazor</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <!-- https://devblogs.microsoft.com/dotnet/producing-packages-with-source-link/ -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Glazor' Or '$(MSBuildProjectName)' == 'Glazor.EntityFrameworkCore'">
+    <None Include="$(MSBuildThisFileDirectory)assets\icon.png" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+</Project>

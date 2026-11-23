@@ -1,0 +1,190 @@
+﻿@namespace Glazor.Misc
+
+@inject IJSRuntime JS
+@inject ILogger<MouseAction> Logger
+@implements IAsyncDisposable 
+
+<span @ref=spanRef hidden />
+
+@code {
+    /// <summary>Required. The event handled: a click, a double-click, the wheel or the context menu.</summary>
+    [Parameter, EditorRequired]
+    public MouseType Type { get; set; } = MouseType.Click;
+
+    /// <summary>Requires Shift held: the handler fires only with it.</summary>
+    [Parameter]
+    public bool ShiftKey { get; set; }
+
+    /// <summary>Requires Ctrl held: the handler fires only with it.</summary>
+    [Parameter]
+    public bool CtrlKey { get; set; }
+
+    /// <summary>Turns the handler off without unmounting it.</summary>
+    [Parameter]
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>Stops the event from reaching the elements around it and cancels its default action: a checkbox or a link
+    /// inside the element does not act on the click, the wheel does not scroll the page.</summary>
+    [Parameter]
+    public bool CancelBubble { get; set; } = true;
+
+    /// <summary>
+    /// When true click and double click are processed exclusively, never together: a click is processed 500 ms later, the usual
+    /// double-click interval, unless a double-click takes its place.
+    /// </summary>
+    [Parameter]
+    public bool ExclusiveClick { get; set; } = false;
+
+    /// <summary>Attaches to the nearest ancestor with this tag name; without it, to the parent element.</summary>
+    [Parameter]
+    public string? BindAncestorWithTag { get; set; }
+
+    /// <summary>Required. Raised for the event, with the target's <c>name</c> and <c>id</c>, the position and the wheel delta.</summary>
+    [Parameter, EditorRequired]
+    public EventCallback<MouseEvent> OnMouse { get; set; }
+
+    private ElementReference spanRef;
+
+    private ElementReference _lastSpanRef;
+    private MouseType? _lastType;
+    private bool _lastShiftKey;
+    private bool _lastCtrlKey;
+    private bool _lastEnabled;
+    private string? _lastBindAncestorWithTag;
+    private bool _lastCancelBubble;
+    private bool _lastExclusiveClick;
+
+    private IJSObjectReference? module;
+    private bool _disposed;
+    // https://learn.microsoft.com/en-us/aspnet/core/blazor/javascript-interoperability/call-dotnet-from-javascript?view=aspnetcore-10.0
+    private DotNetObjectReference<MouseAction>? dotNetObjRef;
+
+    /// <inheritdoc/>
+    protected override void OnInitialized()
+    {
+        dotNetObjRef = DotNetObjectReference.Create(this);
+    }
+
+    /// <inheritdoc/>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && module == null)
+        {
+            IJSObjectReference imported = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Glazor/Misc/MouseAction.razor.js");
+            if (_disposed)
+            {
+                await imported.DisposeAsync();   // disposed while the import was in flight
+                return;
+            }
+            module = imported;
+        }
+        // It's not enough on firstRender and sometimes firstRender and !firstRender are executed "together"
+        if (module != null && !string.IsNullOrEmpty(spanRef.Id) &&  
+                (spanRef.Id != _lastSpanRef.Id || Type != _lastType 
+                    || ShiftKey != _lastShiftKey || CtrlKey != _lastCtrlKey
+                    || Enabled != _lastEnabled || BindAncestorWithTag != _lastBindAncestorWithTag
+                    || CancelBubble != _lastCancelBubble || ExclusiveClick != _lastExclusiveClick))
+        {
+            // set before the first await: a render that arrives while this one waits finds it registered
+            var old = (_lastSpanRef, _lastType, _lastShiftKey, _lastCtrlKey, _lastBindAncestorWithTag);
+            _lastSpanRef = spanRef;
+            _lastType = Type;
+            _lastShiftKey = ShiftKey;
+            _lastCtrlKey = CtrlKey;
+            _lastEnabled = Enabled;
+            _lastBindAncestorWithTag = BindAncestorWithTag;
+            _lastCancelBubble = CancelBubble;
+            _lastExclusiveClick = ExclusiveClick;
+            try {
+                await CleanupAsync(old._lastSpanRef, old._lastType, old._lastShiftKey, old._lastCtrlKey, old._lastBindAncestorWithTag);
+                await module.RequireNotNull().InvokeVoidAsync("registerMouseHandler", spanRef, dotNetObjRef.RequireNotNull(),
+                    nameof(ProcessAsync), Type.ToString().ToLowerInvariant(), ShiftKey, CtrlKey, Enabled, BindAncestorWithTag, CancelBubble, ExclusiveClick);
+            }
+            catch (ObjectDisposedException e) {
+                if (Logger.IsEnabled(LogLevel.Trace))
+                    Logger.LogTrace("As far as I know this can be safely ignored: {msg}", e.Message);
+            }
+        }
+    }
+
+    private ValueTask CleanupAsync() => CleanupAsync(_lastSpanRef, _lastType, _lastShiftKey, _lastCtrlKey, _lastBindAncestorWithTag);
+
+    private async ValueTask CleanupAsync(ElementReference spanRef, MouseType? type, bool shiftKey, bool ctrlKey, string? bindAncestorWithTag)
+    {
+        if (type != null)
+        {
+            await module!.InvokeVoidAsync("cleanup", spanRef, bindAncestorWithTag, type.Value.ToString().ToLowerInvariant(), shiftKey, ctrlKey);
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        _disposed = true;
+        if (module != null)
+        {
+            try
+            {
+                try
+                {
+                    await CleanupAsync();
+                }
+                finally
+                {
+                    await module.DisposeAsync();
+                }
+            }
+            catch (Exception ex) when (ex is JSDisconnectedException or TaskCanceledException)
+            {
+                // Ignore
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error while disposing MouseAction");
+            }
+            module = null;
+        }
+        dotNetObjRef?.Dispose();
+        spanRef = default;
+        GC.SuppressFinalize(this);
+    }
+
+
+    /// <summary>
+    /// Called from JS. The coordinates arrive as doubles because MouseEvent.clientX/Y are doubles in the browser and
+    /// carry fractions under page zoom or on high-DPI screens; System.Text.Json would refuse to bind 12.5 to an int and
+    /// the whole call would fail. They are rounded to the pixel the consumers work in.
+    /// </summary>
+    [JSInvokable, System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]   // for the JS side, not for hosts
+    public async Task ProcessAsync(string? name, string? id, double clientX, double clientY, double wheelDelta)
+    {
+        try
+        {
+            await OnMouse.InvokeAsync(new MouseEvent(name, id, (int)Math.Round(clientX), (int)Math.Round(clientY), wheelDelta));
+        }
+        catch (Exception ex) when (!_disposed)
+        {
+            await DispatchExceptionAsync(ex);
+        }
+    }
+
+    /// <summary>A mouse action, as <c>OnMouse</c> reports it.</summary>
+    /// <param name="TargetName">The <c>name</c> attribute of the element under the pointer, if any.</param>
+    /// <param name="TargetId">The <c>id</c> attribute of the element under the pointer, if any.</param>
+    /// <param name="ClientX">The pointer's horizontal position in the viewport, in CSS pixels.</param>
+    /// <param name="ClientY">The pointer's vertical position in the viewport, in CSS pixels.</param>
+    /// <param name="WheelDelta">For <see cref="MouseType.Wheel"/>, how far the wheel turned; 0 otherwise.</param>
+    public record MouseEvent(string? TargetName, string? TargetId, int ClientX, int ClientY, double WheelDelta);
+
+    /// <summary>The mouse action a <c>MouseAction</c> listens for.</summary>
+    public enum MouseType {
+
+        /// <summary>A click with the main button.</summary>
+        Click = 0,
+        /// <summary>A double-click.</summary>
+        DblClick = 1,
+        /// <summary>A turn of the wheel.</summary>
+        Wheel = 2,
+        /// <summary>On many browsers, the right mouse button.</summary>
+        ContextMenu = 3
+    }
+}

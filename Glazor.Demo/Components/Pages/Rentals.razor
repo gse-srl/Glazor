@@ -1,0 +1,158 @@
+﻿@page "/rentals"
+@using Glazor.Grds.Mdls
+@using Glazor.EntityFrameworkCore
+@using Microsoft.EntityFrameworkCore
+@using System.Globalization
+@inject IDbContextFactory<SakilaContext> DbFactory
+@implements IDisposable
+
+<PageTitle>Glazor demo - Personalized columns</PageTitle>
+<h1>A larger paged grid, with personalized columns</h1>
+<p>The 16,044 rentals of the Sakila DVD store, in SQLite, joined to their customer, film, category, staff and payment in
+    the query. Five columns are personalized: the first opens the row's film in a dialog, the return date shows a badge
+    while the DVD is out, the rating marks the adult ones with a class, the amount is a styled cell with a class from its
+    value, and the days out are computed in the cell from the row, so that column neither sorts nor filters. The cast is a
+    collection, the ids of the film's actors: its cell shows their names, and its filter, an <code>EFValuesInSetDef</code>,
+    lists the actors read from the database with the number of their films, and keeps the rentals of a film with one of
+    those selected. The category, rating and staff filters are <code>EFDistinctDef</code>s over the values those columns have in the
+    grid's query.</p>
+
+<div class="rentals fill">
+<Grigliaria TGridItem="RentalRow" Model="_model" Spinner="@Gui.Spinner"
+            Layoutable="true" RowHeight="32" HeaderHeight="40" RowDialogEnabled="true" ReloadEnabled="true"
+            VertResizer="@(GridVertResizers.RowHeight("flex: 1 1 0; min-height: 12rem;", 4, 60))"
+            HorzResizer="@(GridHorzResizers.DispUnitWidth(50, 150, 12))">
+    <GridColumn EFProperty="@(x => x.RentalId)" Name="Details" Label="" Fixed="true" Sortable="false" Filterable="false" PreferredSize="4" Alignment="Alignment.Center">
+        <DisplayTemplate>
+            <button type="button" class="link" title="Show the film" aria-label="Show the film" @onclick="() => ShowAsync(context.Item)"><span class="demo-icon info" aria-hidden="true"></span></button>
+        </DisplayTemplate>
+    </GridColumn>
+    <GridColumn EFProperty="@(x => x.RentalId)" Name="RentalId" Label="Id" PreferredSize="7" Alignment="Alignment.Right" />
+    <GridColumn EFProperty="@(x => x.RentalDate)" Name="RentalDate" Label="Rented" PreferredSize="14" />
+    <GridColumn EFProperty="@(x => x.ReturnDate)" Name="ReturnDate" Label="Returned" PreferredSize="14">
+        <DisplayTemplate>
+            @if (context.Value is DateTime returned)
+            {
+                @returned.ToString("g")
+            }
+            else
+            {
+                <span class="badge out">still out</span>
+            }
+        </DisplayTemplate>
+    </GridColumn>
+    <GridColumn Property="@(x => x.ReturnDate)" Name="Days" Label="Days out" PreferredSize="7" Alignment="Alignment.Right" Sortable="false" Filterable="false">
+        <DisplayTemplate>
+            @(((context.Value ?? DateTime.Now) - context.Item.RentalDate).Days)
+        </DisplayTemplate>
+    </GridColumn>
+    <GridColumn EFProperty="@(x => x.Customer)" Name="Customer" Label="Customer" PreferredSize="18" />
+    <GridColumn EFProperty="@(x => x.Email)" Name="Email" Label="Email" PreferredSize="24" />
+    <GridColumn EFProperty="@(x => x.Film)" Name="Film" Label="Film" PreferredSize="20" />
+    <GridColumn EFProperty="@(x => x.Cast.AsQueryable())" Name="Cast" Label="Cast" PreferredSize="24" Sortable="false" FilterDef="_castFDef">
+        <DisplayTemplate>
+            <Clamper LinesToClamp="1">@CastNames(context.Value)</Clamper>
+        </DisplayTemplate>
+    </GridColumn>
+    <GridColumn EFProperty="@(x => x.Category)" Name="Category" Label="Category" PreferredSize="10" FilterDef="_categoryFDef" />
+    <GridColumn EFProperty="@(x => x.Rating)" Name="Rating" Label="Rating" PreferredSize="7" Alignment="Alignment.Center" FilterDef="_ratingFDef" CellClassFn="@(ctx => ctx.Value == "R" || ctx.Value == "NC-17" ? "adult" : null)" />
+    <GridColumn EFProperty="@(x => x.Length)" Name="Length" Label="Minutes" PreferredSize="7" Alignment="Alignment.Right" />
+    <GridColumn EFProperty="@(x => x.RentalRate)" Name="RentalRate" Label="Rate" PreferredSize="7" Alignment="Alignment.Right" />
+    <GridColumn EFProperty="@(x => x.Amount)" Name="Amount" Label="Paid" PreferredSize="8" Alignment="Alignment.Right"
+                CellClassFn="@(ctx => ctx.Value == null ? "unpaid" : ctx.Value > 5 ? "big" : null)">
+        <DisplayTemplate>
+            @(context.Value?.ToString("C2", Dollars) ?? "unpaid")
+        </DisplayTemplate>
+    </GridColumn>
+    <GridColumn EFProperty="@(x => x.Staff)" Name="Staff" Label="Staff" PreferredSize="12" FilterDef="_staffFDef" />
+    <GridColumn EFProperty="@(x => x.Store)" Name="Store" Label="Store" PreferredSize="6" Alignment="Alignment.Center" />
+</Grigliaria>
+</div>
+
+<DialogBox @ref="_dialog" Class="film-dialog">
+    @if (_shown != null)
+    {
+        <h3>@_shown.Film</h3>
+        <p>@_shown.Category, rated @(_shown.Rating ?? "-"), @(_shown.Length?.ToString() ?? "-") minutes, rate @_shown.RentalRate.ToString("C2", Dollars).</p>
+        <p>Rented by @_shown.Customer on @_shown.RentalDate.ToString("g") from store @_shown.Store, served by @_shown.Staff.</p>
+        <button type="button" @onclick="() => _dialog.CloseAsync()">Close</button>
+    }
+</DialogBox>
+
+@code {
+    [CascadingParameter] public GuiHelper Gui { get; set; } = null!;
+
+    private EFDataGridModel<SakilaContext, RentalRow> _model = null!;
+    private DialogBox _dialog = null!;
+    private RentalRow? _shown;
+    private EFValuesInSetDef<SakilaContext, int, ActorRow, int> _castFDef = null!;
+    private EFDistinctDef<SakilaContext, RentalRow, string?> _categoryFDef = null!, _ratingFDef = null!;
+    private EFDistinctDef<SakilaContext, RentalRow, string> _staffFDef = null!;
+    private Dictionary<int, string> _actorNames = [];
+    private static readonly CultureInfo Dollars = CultureInfo.GetCultureInfo("en-US");   // Sakila's amounts are dollars
+
+    protected override async Task OnInitializedAsync()
+    {
+        _model = new()
+        {
+            DbContextFactory = DbFactory,
+            ItemKeyExpr = r => r.RentalId,
+            BaseQueryFn = (db, _) => Rows(db),
+        };
+        _categoryFDef = ValuesOf<string?>(r => r.Category);
+        _ratingFDef = ValuesOf<string?>(r => r.Rating);
+        _staffFDef = ValuesOf<string>(r => r.Staff);
+        // The cast holds actor ids; the filter lists the actors with their name and number of films, read from the database
+        _castFDef = new(id => id, startFull: true)
+        {
+            DbContextFactoryFn = () => DbFactory,
+            QueryFn = ActorRow.Query,
+            RowKeyFn = a => a.Id,
+            ColumnsFn = (model, texts) =>
+            {
+                model.AddColumn("name", new Column<ActorRow, string>("Actor") { PreferredSize = 20 }, a => a.Name);
+                model.AddColumn("films", new Column<ActorRow, int>("Films") { PreferredSize = 6, Alignment = Alignment.Right }, a => a.Films);
+                model.SetSortedColumn("name", true);
+            },
+        };
+        await using SakilaContext db = await DbFactory.CreateDbContextAsync();
+        _actorNames = await ActorRow.Query(db).ToDictionaryAsync(a => a.Id, a => a.Name);
+    }
+
+    // The grid's rows, which the set filters read their values from too
+    private static IQueryable<RentalRow> Rows(SakilaContext db) => db.Rentals.AsNoTracking().Select(r => new RentalRow
+    {
+        RentalId = r.RentalId,
+        RentalDate = r.RentalDate,
+        ReturnDate = r.ReturnDate,
+        Customer = r.Customer.FirstName + " " + r.Customer.LastName,
+        Email = r.Customer.Email,
+        Film = r.Inventory.Film.Title,
+        Category = r.Inventory.Film.Categories.Select(c => c.Category.Name).FirstOrDefault(),
+        Cast = r.Inventory.Film.Actors.Select(a => a.ActorId).ToList(),
+        Rating = r.Inventory.Film.Rating,
+        Length = r.Inventory.Film.Length,
+        RentalRate = r.Inventory.Film.RentalRate,
+        Amount = db.Payments.Where(p => p.RentalId == r.RentalId).Select(p => (double?)p.Amount).FirstOrDefault(),
+        Staff = r.Staff.FirstName + " " + r.Staff.LastName,
+        Store = r.Inventory.StoreId,
+    });
+
+    private EFDistinctDef<SakilaContext, RentalRow, VT> ValuesOf<VT>(System.Linq.Expressions.Expression<Func<RentalRow, VT?>> column) => new(startFull: true)
+    {
+        DbContextFactoryFn = () => DbFactory,
+        QueryFn = Rows,
+        ColumnExpr = column,
+    };
+
+    private string CastNames(IQueryable<int>? cast) =>
+        cast == null ? "" : string.Join(", ", cast.Select(id => _actorNames.GetValueOrDefault(id, "#" + id)).Order());
+
+    private async Task ShowAsync(RentalRow row)
+    {
+        _shown = row;
+        await _dialog.ShowModalAsync();
+    }
+
+    public void Dispose() => _model.Dispose();
+}

@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <!-- Ship the XML doc file, so the /// comments reach a consumer's IntelliSense and the
+         compiler checks them: a public member with no comment (CS1591) is a warning, as are
+         malformed XML, a bad cref and a mismatched param. Not in a .razor file, whose generated code
+         turns CS1591 off: a component's summary goes in its .razor.cs, and @code members need it by hand. -->
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <Description>A specialized Razor Class Library for .NET 10 Blazor applications, offering high-performance data grids and essential UI components.</Description>
+    <PackageTags>blazor;datagrid;grid;razor;components</PackageTags>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

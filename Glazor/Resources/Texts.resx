@@ -1,0 +1,219 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Layout" xml:space="preserve">
+    <value>Layout</value>
+  </data>
+  <data name="ColumnLeft" xml:space="preserve">
+    <value>Column left</value>
+  </data>
+  <data name="ColumnRight" xml:space="preserve">
+    <value>Column right</value>
+  </data>
+  <data name="ShiftLeft" xml:space="preserve">
+    <value>Shift left</value>
+  </data>
+  <data name="ShiftRight" xml:space="preserve">
+    <value>Shift right</value>
+  </data>
+  <data name="SearchOnSortedColumn" xml:space="preserve">
+    <value>Search on current sorted column</value>
+  </data>
+  <data name="FirstRow" xml:space="preserve">
+    <value>First row</value>
+  </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>Previous page</value>
+  </data>
+  <data name="PreviousRow" xml:space="preserve">
+    <value>Previous row</value>
+  </data>
+  <data name="NextRow" xml:space="preserve">
+    <value>Next row</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>Next page</value>
+  </data>
+  <data name="LastRow" xml:space="preserve">
+    <value>Last row</value>
+  </data>
+  <data name="SortAscending" xml:space="preserve">
+    <value>Sort ascending</value>
+  </data>
+  <data name="SortDescending" xml:space="preserve">
+    <value>Sort descending</value>
+  </data>
+  <data name="NoSort" xml:space="preserve">
+    <value>No sort</value>
+  </data>
+  <data name="Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="FilterActive" xml:space="preserve">
+    <value>Filter active</value>
+  </data>
+  <data name="FilterMenu" xml:space="preserve">
+    <value>Filter...</value>
+  </data>
+  <data name="ClearFilter" xml:space="preserve">
+    <value>Clear filter</value>
+  </data>
+  <data name="HiddenColumns" xml:space="preserve">
+    <value>Hidden columns</value>
+  </data>
+  <data name="VisibleColumns" xml:space="preserve">
+    <value>Visible columns</value>
+  </data>
+  <data name="ShowAllColumns" xml:space="preserve">
+    <value>Show all columns</value>
+  </data>
+  <data name="ShowSelectedColumns" xml:space="preserve">
+    <value>Show selected columns</value>
+  </data>
+  <data name="HideSelectedColumns" xml:space="preserve">
+    <value>Hide selected columns</value>
+  </data>
+  <data name="HideAllColumns" xml:space="preserve">
+    <value>Hide all columns</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Post" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="EditRow" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="InsertRow" xml:space="preserve">
+    <value>Insert</value>
+  </data>
+  <data name="RemoveRow" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="IncludeNull" xml:space="preserve">
+    <value>Include null</value>
+  </data>
+  <data name="IncludeNullOrEmpty" xml:space="preserve">
+    <value>Include null/empty</value>
+  </data>
+  <data name="Contains" xml:space="preserve">
+    <value>Contains</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="True" xml:space="preserve">
+    <value>True</value>
+  </data>
+  <data name="False" xml:space="preserve">
+    <value>False</value>
+  </data>
+  <data name="SelectAll" xml:space="preserve">
+    <value>Select all</value>
+  </data>
+  <data name="SelectRow" xml:space="preserve">
+    <value>Select row</value>
+  </data>
+  <data name="MoveRowUp" xml:space="preserve">
+    <value>Move row up</value>
+  </data>
+  <data name="MoveRowDown" xml:space="preserve">
+    <value>Move row down</value>
+  </data>
+  <data name="ShowValidationError" xml:space="preserve">
+    <value>Show the validation error</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>Loading</value>
+  </data>
+  <data name="GridLayout" xml:space="preserve">
+    <value>Grid layout</value>
+  </data>
+  <data name="GridLayoutFiltered" xml:space="preserve">
+    <value>Grid layout - Filtered data</value>
+  </data>
+  <data name="Empty" xml:space="preserve">
+    <value>...empty...</value>
+  </data>
+  <data name="InvalidRange" xml:space="preserve">
+    <value>Invalid range</value>
+  </data>
+  <data name="Expand" xml:space="preserve">
+    <value>Expand</value>
+  </data>
+  <data name="Collapse" xml:space="preserve">
+    <value>Collapse</value>
+  </data>
+  <data name="Zoom" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="ZoomIn" xml:space="preserve">
+    <value>Zoom in</value>
+  </data>
+  <data name="ZoomOut" xml:space="preserve">
+    <value>Zoom out</value>
+  </data>
+  <data name="ZoomOutAll" xml:space="preserve">
+    <value>Zoom out all the way</value>
+  </data>
+  <data name="Editing" xml:space="preserve">
+    <value>Editing</value>
+  </data>
+  <data name="Inserting" xml:space="preserve">
+    <value>Inserting</value>
+  </data>
+  <data name="Total" xml:space="preserve">
+    <value>TOTAL</value>
+  </data>
+  <data name="SubTotal" xml:space="preserve">
+    <value>tot:</value>
+  </data>
+  <data name="Label" xml:space="preserve">
+    <value>Label</value>
+  </data>
+  <data name="PreferredSize" xml:space="preserve">
+    <value>Pref. size</value>
+  </data>
+  <data name="ShowRow" xml:space="preserve">
+    <value>Show the row with all its columns</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>Reload the data</value>
+  </data>
+  <data name="Row" xml:space="preserve">
+    <value>Row</value>
+  </data>
+  <data name="Column" xml:space="preserve">
+    <value>Column</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+</root>

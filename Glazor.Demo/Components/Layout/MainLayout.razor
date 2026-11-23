@@ -1,0 +1,77 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime JS
+@inject ILogger<MainLayout> Logger
+
+<div class="page">
+    <header class="top">
+        <strong>Glazor demo</strong>
+        <nav>
+            <NavLink href="" Match="NavLinkMatch.All">Grid</NavLink>
+            <NavLink href="tracks">Editable paged EF grid</NavLink>
+            <NavLink href="tracks-in-place">In-place edit grid</NavLink>
+            <NavLink href="rentals">Personalized columns</NavLink>
+            <NavLink href="tree">Tree</NavLink>
+            <NavLink href="music">EF tree</NavLink>
+            <NavLink href="multisel">MultiSelGrid</NavLink>
+            <NavLink href="misc">Tabs, forms, dialogs</NavLink>
+        </nav>
+        <label class="theme">
+            Theme
+            <select @bind="_theme" @bind:after="ApplyThemeAsync">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="aurora">Aurora</option>
+                <option value="paper">Paper</option>
+            </select>
+        </label>
+    </header>
+    <main>
+        <CascadingValue Value="_gui" IsFixed="true">
+            @Body
+        </CascadingValue>
+    </main>
+</div>
+
+@* one spinner and one dialog, for errors and questions, for the whole app, handed to the pages through the cascaded holder *@
+<Spinner @ref="_gui.Spinner" />
+
+<DialogBox @ref="_dialog" Class="@(_asking ? "demo-dialog confirm-dialog" : "demo-dialog error-dialog")">
+    <h3><span class="demo-icon @(_asking ? "question" : "error")" aria-hidden="true"></span> @_dialogTitle</h3>
+    <p>@_dialogMessage</p>
+    <div class="buttons">
+        @if (_asking) {
+            <button type="button" @onclick="() => _dialog.CloseAsync()" class="cancel">Cancel</button>
+        }
+        <button type="button" @onclick="OkAsync" class="ok">OK</button>
+    </div>
+</DialogBox>
+
+@code {
+    private GuiHelper _gui = null!;
+    private DialogBox _dialog = null!;
+    private string? _dialogTitle, _dialogMessage;
+    private bool _asking;
+    private Func<Task>? _onConfirm;
+    private string _theme = "light";
+
+    protected override void OnInitialized() => _gui = new(Logger, (title, message) => ShowAsync(title, message, null), ShowAsync);
+
+    private async Task ShowAsync(string title, string message, Func<Task>? onConfirm)
+    {
+        (_dialogTitle, _dialogMessage, _asking, _onConfirm) = (title, message, onConfirm != null, onConfirm);
+        StateHasChanged();
+        await _dialog.ShowModalAsync();
+    }
+
+    // The action runs once the dialog has closed, since it may open it again with an error
+    private async Task OkAsync()
+    {
+        Func<Task>? onConfirm = _onConfirm;
+        _onConfirm = null;
+        await _dialog.CloseAsync();
+        if (onConfirm != null)
+            await onConfirm();
+    }
+
+    private async Task ApplyThemeAsync() => await JS.InvokeVoidAsync("glazorDemo.setTheme", _theme);
+}

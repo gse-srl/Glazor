@@ -1,0 +1,51 @@
+﻿@namespace Glazor.Grds.Filters
+
+@using Microsoft.AspNetCore.Components.Forms
+
+@inherits AFilterDefRenderer<BoolDef>
+
+<div>
+    <table>
+    @if (NullableValue) {
+    <tr>
+        <td><label for="@($"{IdPrefix}_include")">@Texts.Get(TextKeys.IncludeNull): </label></td>
+        <td><InputCheckbox id="@($"{IdPrefix}_include")" @bind-Value="FilterDef.IncludeNull"/></td>
+    </tr>
+    }
+    <tr>
+        <td><label id="@($"{IdPrefix}_value")">@Texts.Get(TextKeys.Value): </label></td>
+        <td>
+            <div role="radiogroup" aria-labelledby="@($"{IdPrefix}_value")">
+            <InputRadioGroup TValue="BoolDef.BoolValue" @bind-Value="FilterDef.Value">
+                <label style="margin-right:4px">
+                    <InputRadio @ref="valueRef[BoolDef.BoolValue.All]" TValue="BoolDef.BoolValue" Value="BoolDef.BoolValue.All"/>
+                    @Texts.Get(TextKeys.All)
+                </label>
+                <label style="margin-right:4px">
+                    <InputRadio @ref="valueRef[BoolDef.BoolValue.True]" TValue="BoolDef.BoolValue" Value="BoolDef.BoolValue.True"/>
+                    @Texts.Get(TextKeys.True)
+                </label>
+                <label style="margin-right:4px">
+                    <InputRadio @ref="valueRef[BoolDef.BoolValue.False]" TValue="BoolDef.BoolValue" Value="BoolDef.BoolValue.False"/>
+                    @Texts.Get(TextKeys.False)
+                </label>
+            </InputRadioGroup>
+            </div>
+        </td>
+    </tr>
+    </table>
+</div>
+
+@code {
+    private Dictionary<BoolDef.BoolValue, InputRadio<BoolDef.BoolValue>> valueRef = new();
+
+    /// <inheritdoc/>
+    protected internal override async ValueTask ShownAsync()
+    {
+        if (valueRef != null && valueRef.TryGetValue(FilterDef.Value, out InputRadio<BoolDef.BoolValue>? radio)) {
+            ElementReference? vt = radio?.Element;
+            if (vt.HasValue)
+                await vt.Value.FocusAsync();
+        }
+    }
+}

@@ -1,0 +1,83 @@
+﻿@namespace Glazor.Grds.Decs
+
+@using Glazor.Grds.Mdls
+@using Glazor.Misc
+
+@typeparam TGridItem
+
+@inject IServiceProvider Services
+
+@code {
+    private IGlazorTexts? _texts;
+    private IGlazorTexts Texts => _texts ??= GlazorTexts.Resolve(Services);
+
+    /// <summary>The row heading to draw, as <c>RowHeadingTemplate</c> receives it.</summary>
+    [Parameter]
+    public IGrigliaria<TGridItem>.RowHeadingTemplateParam Param { get; set; } = null!;
+}
+
+@{
+    bool isCurrentRow = Param.RowIdx == Param.Model.GetCurrentRow();
+    bool isEditedRow = isCurrentRow && Param.Model.IsCurrentRowFrozen();
+    bool isInsertedRow = isEditedRow && DefaultCell<TGridItem>.FindWrapped<IEditableGridModel<TGridItem>>(Param.Model) is { } editable
+        && editable.IsInsertPending();
+    <td style="@(Param.Grid.RowHeight == null ? "" : $"height:{Param.Grid.RowHeight}px")" align="center">
+        @{
+            @if (isEditedRow && Param.Grid.IsEditingInPlace) {
+                @* every error of the row, those of editors scrolled out of the column window included *@
+                List<string> allErrors = Param.Grid.GetEditContext()?.GetValidationMessages().ToList() ?? [];
+                <span class="glazor rowedit">
+                    <button type="button" class="btnRowCancel" title="@Texts.Get(TextKeys.Cancel)" aria-label="@Texts.Get(TextKeys.Cancel)"
+                            @onclick="@(async () => await Param.Grid.CancelAsync())"></button>
+                    <button type="button" class="@(allErrors.Count > 0 ? "btnRowPost invalid" : "btnRowPost")"
+                            title="@string.Join(Environment.NewLine, allErrors.Prepend(Texts.Get(TextKeys.Post)))" aria-label="@Texts.Get(TextKeys.Post)"
+                            @onclick="@(async () => await Param.Grid.PostAsync())"></button>
+                </span>
+                @* errors no editor shows: whole-row ones, and those of properties with no editor *@
+                if (Param.Grid.RowErrors().ToList() is { Count: > 0 } errors) {
+                    <i class="glazor message-icon row-errors" role="img" title="@string.Join(Environment.NewLine, errors)"
+                       aria-label="@string.Join(" ", errors)"></i>
+                }
+                @* the stop before the column window, when no column is fixed and no header cell holds it *@
+                if (!Param.Grid.ShowHeader && Param.Grid.HasLeadingEditEdge()) {
+                    <EditEdge TGridItem="TGridItem" Grid="@Param.Grid" Step="-1" />
+                }
+            }
+            else if (isInsertedRow) {
+                <span class="glazor icon inserting" role="img" aria-label="@Texts.Get(TextKeys.Inserting)"></span>
+            }
+            else if (isEditedRow) {
+                <span class="glazor icon editing" role="img" aria-label="@Texts.Get(TextKeys.Editing)"></span>
+            }
+            else if (isCurrentRow) {
+                <span class="glazor icon current" aria-hidden="true"></span>  @* the row carries aria-current *@
+            }
+            else {
+                <span>&nbsp;</span>
+            }
+        }
+        @if (Param.Grid.IsCellCursorEnabled()) {
+            // at cell level
+            <MouseAction Type="MouseAction.MouseType.Click" BindAncestorWithTag="td"
+                OnMouse="@(async (evt) => await Param.Grid.RowClickedAsync(Param.RowIdx, null))"
+                Enabled="@(!Param.Model.IsCurrentRowFrozen() || Param.Grid.IsFastEdit)"/>
+            <MouseAction Type="MouseAction.MouseType.DblClick" BindAncestorWithTag="td"
+                OnMouse="@(async (evt) => await Param.Grid.DblClickAsync(Param.RowIdx, null))"
+                Enabled="@(!Param.Model.IsCurrentRowFrozen())"/>
+        }
+        else {
+            // at row level
+            <MouseAction Type="MouseAction.MouseType.Click" BindAncestorWithTag="tr"
+                OnMouse="@(async (evt) => await Param.Grid.RowClickedAsync(Param.RowIdx, null))"
+                Enabled="@(!Param.Model.IsCurrentRowFrozen() || Param.Grid.IsFastEdit)" CancelBubble="false"/>
+            <MouseAction Type="MouseAction.MouseType.DblClick" BindAncestorWithTag="tr"
+                OnMouse="@(async (evt) => await Param.Grid.DblClickAsync(Param.RowIdx, null))"
+                Enabled="@(!Param.Model.IsCurrentRowFrozen())"/>
+        }
+        @if (Param.Grid.RowsPopupEnabled) {
+            <MouseAction Type="MouseAction.MouseType.ContextMenu" BindAncestorWithTag="tr"
+                OnMouse="@(async (evt) => await Param.Grid.OnRowPopup.InvokeAsync(new(Param.RowIdx, evt.ClientX, evt.ClientY)))"
+                Enabled="@(Param.Grid.RowsPopupEnabled)"/>
+        }
+    </td>
+}

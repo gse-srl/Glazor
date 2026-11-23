@@ -1,0 +1,66 @@
+﻿@using Glazor.Misc;
+
+@namespace Glazor.Tabs
+
+<CascadingValue Value="this" IsFixed="true" >
+    @ChildContent
+    @{
+        string cssClasses = LabelsPosition switch 
+        {
+            LabelsPosition.Left => "vert",
+            LabelsPosition.LeftVert => "vert textvert",
+            LabelsPosition.Right => "vert right",
+            LabelsPosition.RightVert => "vert right textvert",
+            LabelsPosition.Bottom => "bottom",
+            _ => ""
+        };
+    }
+    <div class="tabs-wrapper @cssClasses">
+        <Defer>
+            @{ CheckUniqueNames(); }
+            <div class="flexrow label-list" role="tablist" aria-orientation="@(LabelsPosition is LabelsPosition.Left or LabelsPosition.LeftVert or LabelsPosition.Right or LabelsPosition.RightVert ? "vertical" : null)">
+                <KeyAction Key="ArrowRight" OnKey="@(async evt => await MoveFocusNextAsync(evt))" BindAncestorWithTag="div" />
+                <KeyAction Key="ArrowDown" OnKey="@(async evt => await MoveFocusNextAsync(evt))" BindAncestorWithTag="div" />
+                <KeyAction Key="ArrowLeft" OnKey="@(async evt => await MoveFocusPrevAsync(evt))" BindAncestorWithTag="div" />
+                <KeyAction Key="ArrowUp" OnKey="@(async evt => await MoveFocusPrevAsync(evt))" BindAncestorWithTag="div" />
+                <KeyAction Key="Home" OnKey="@(async evt => await MoveFocusStartAsync())" BindAncestorWithTag="div" />
+                <KeyAction Key="End" OnKey="@(async evt => await MoveFocusEndAsync())" BindAncestorWithTag="div" />
+                @* taken here, so a host's own Enter around the tab set does not see it *@
+                <KeyAction Key="Enter" OnKey="@(async evt => await SelectFocusedTabAsync(evt))" BindAncestorWithTag="div" />
+                @foreach (var tab in TabList)
+                {
+                    @if (!tab.Hidden)
+                    {
+                        <button @ref="ElementReferences[tab.Name]" 
+                                type="button"
+                                id="@tab.TabId"
+                                class="tab-label @(tab.IsActive ? "active" : "") @(tab.Disabled || (CurrentTabFrozen && !tab.IsActive) ? "disabled" : "")"
+                                @key="tab"
+                                @onclick="() => SetCurrentTabAsync(tab)" 
+                                title="@tab.Tooltip" 
+                                role="tab"
+                                aria-selected="@(tab.IsActive ? "true" : "false")"
+                                aria-disabled="@(tab.Disabled || (CurrentTabFrozen && !tab.IsActive) ? "true" : "false")"
+                                aria-controls="@(tab.IsActive ? tab.PanelId : null)"
+                                tabindex="@(tab == CurrentTab ? "0" : "-1")">
+                            <span>@tab.Label</span>
+                        </button>
+                    }
+                }
+            </div>
+            <div class="flexrow main-container">
+                @if (CurrentTab is not null)
+                {
+                    <div id="@CurrentTab.PanelId"
+                         @key="CurrentTab" 
+                         class="tab-content" 
+                         role="tabpanel" 
+                         aria-labelledby="@CurrentTab.TabId"
+                         tabindex="0" >
+                        @CurrentTab.ChildContent
+                    </div>
+                }
+            </div>
+        </Defer>
+    </div>
+</CascadingValue>

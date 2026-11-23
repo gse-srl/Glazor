@@ -1,0 +1,25 @@
+﻿@typeparam TGridItem
+
+@using Glazor.Misc
+
+<DialogBox @ref="jsDialog" Class="glazor rowViewDlg" OnClose="Closed" aria-labelledby="@(_fields != null ? _titleId : null)">
+    @if (_fields != null) {   @* nothing before the first open *@
+        <div class="content" style="width: 600px; max-width: 100%;">
+            <h3 class="title" id="@_titleId">@Texts.Get(TextKeys.Row) @RowCounter()</h3>
+            <Grigliaria @ref="_fieldsGrid" TGridItem="Field" Model="_fields" PageSize="@Math.Clamp(_fields.GetRowCount(), 1, 15)"
+                ShowHeader="false" ShowRowNumber="false" ShowDefaultButtons="false" ColumnsPopupEnabled="false" AriaLabel="@Texts.Get(TextKeys.Row)"
+                RowHeight="@(_grid?.RowHeight ?? 40)"/>   @* as tall as the grid's rows; never by content, which would resize the dialog from row to row *@
+            <span style="height:10px;"></span>
+            <div style="display: flex; justify-content: center; gap: 1em;" class="buttons">
+                <button type="button" @onclick="() => MoveAsync(-1)" disabled="@(!CanMove(-1))" class="move" title="@Texts.Get(TextKeys.PreviousRow)" aria-label="@Texts.Get(TextKeys.PreviousRow)"><span class="glazor icon single-left" aria-hidden="true"></span><KeyAction Key="Enter" OnKey="@(evt => MoveAsync(-1))"/></button>
+                <button type="button" @onclick="() => MoveAsync(1)" disabled="@(!CanMove(1))" class="move" title="@Texts.Get(TextKeys.NextRow)" aria-label="@Texts.Get(TextKeys.NextRow)"><span class="glazor icon single-right" aria-hidden="true"></span><KeyAction Key="Enter" OnKey="@(evt => MoveAsync(1))"/></button>
+                <button type="button" @onclick="CloseAsync" class="ok">@Texts.Get(TextKeys.Close)</button>
+            </div>
+            <KeyAction CtrlKey=true Key="ArrowLeft" OnKey="@(evt => MoveAsync(-1))" BindAncestorWithTag="dialog"/>
+            <KeyAction CtrlKey=true Key="ArrowRight" OnKey="@(evt => MoveAsync(1))" BindAncestorWithTag="dialog"/>
+            @* taken on the dialog, so a host's own Enter or Escape around the grid does not see them *@
+            <KeyAction Key="Enter" OnKey="@(evt => CloseAsync())" BindAncestorWithTag="dialog"/>
+            <KeyAction Key="Escape" OnKey="@(evt => CloseAsync())" BindAncestorWithTag="dialog"/>
+        </div>
+    }
+</DialogBox>

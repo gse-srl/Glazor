@@ -1,0 +1,31 @@
+﻿@page "/multisel"
+@using Glazor.Grds.Mdls
+
+<PageTitle>Glazor demo - MultiSelGrid</PageTitle>
+<h1>MultiSelGrid</h1>
+<p>A selection column with a tri-state select-all in the header, over thirty rows. Ctrl+Space toggles the current row.</p>
+
+<p>Selected: <strong>@_selection.SelectedCount()</strong> of @_rows.Count</p>
+
+<MultiSelGrid TGridItem="Product" Model="_model" SelectionModel="_selection" Spinner="@Gui.Spinner"
+              OnSelectionChanged="StateHasChanged" RowHeight="32" HeaderHeight="40"
+              VertResizer="@(GridVertResizers.RowHeight("flex: 1 1 0; min-height: 12rem;", 2, 60))">
+    <GridColumn Property="@(x => x.Code)" Name="Code" Label="Code" PreferredSize="8" />
+    <GridColumn Property="@(x => x.Name)" Name="Name" Label="Name" PreferredSize="24" />
+    <GridColumn Property="@(x => x.Category)" Name="Category" Label="Category" PreferredSize="10" />
+    <GridColumn Property="@(x => x.Price)" Name="Price" Label="Price" PreferredSize="8" Alignment="Alignment.Right" />
+</MultiSelGrid>
+
+@code {
+    [CascadingParameter] public GuiHelper Gui { get; set; } = null!;
+
+    private readonly List<Product> _rows = SampleData.Products(30);
+    private DataGridModel<Product> _model = null!;
+    private SetSelectionModelWithSelectAll<Product> _selection = null!;
+
+    protected override void OnInitialized()
+    {
+        _model = new(_rows) { ItemKeyFn = p => p.Id };
+        _selection = new(_rows);
+    }
+}

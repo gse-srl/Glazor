@@ -1,0 +1,27 @@
+﻿
+@namespace Glazor.Misc
+
+@if (LinesToClamp <= 0) {
+    @ChildContent
+}
+else {
+    <div style="anchor-name: @($"--{_divRef.Id}")" class="glazor clamper">
+        @if (LinesToClamp == 1) {
+            <div @ref="_divRef" class="ellipsis">
+                @ChildContent
+            </div>
+        }
+        else {
+            <div @ref="_divRef" class="line-clamp" style="@($"--lines-to-clamp:{LinesToClamp}")">@ChildContent</div>
+        }
+        @if (showPopup) {
+            <Popup Open="true" @ref="_popupRef" Class="clamper-popup" 
+                   Style="@($"position: fixed; position-anchor: --{_divRef.Id}; position-area: bottom span-right;")">
+                @* taken on the popup, so the Escape of a dialog or a host around it does not see it; on the content's line,
+                   or the line break shows under white-space: pre-wrap *@
+                @ChildContent<KeyAction Key="Escape" OnKey="@(async evt => await _popupRef.RequireNotNull().CloseAsync())" BindAncestorWithTag="dialog"/>
+            </Popup>
+        }
+    </div>
+}
+

@@ -1,0 +1,219 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Layout" xml:space="preserve">
+    <value>Layout</value>
+  </data>
+  <data name="ColumnLeft" xml:space="preserve">
+    <value>Colonna a sinistra</value>
+  </data>
+  <data name="ColumnRight" xml:space="preserve">
+    <value>Colonna a destra</value>
+  </data>
+  <data name="ShiftLeft" xml:space="preserve">
+    <value>Sposta a sinistra</value>
+  </data>
+  <data name="ShiftRight" xml:space="preserve">
+    <value>Sposta a destra</value>
+  </data>
+  <data name="SearchOnSortedColumn" xml:space="preserve">
+    <value>Cerca nella colonna ordinata</value>
+  </data>
+  <data name="FirstRow" xml:space="preserve">
+    <value>Prima riga</value>
+  </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>Pagina precedente</value>
+  </data>
+  <data name="PreviousRow" xml:space="preserve">
+    <value>Riga precedente</value>
+  </data>
+  <data name="NextRow" xml:space="preserve">
+    <value>Riga successiva</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>Pagina successiva</value>
+  </data>
+  <data name="LastRow" xml:space="preserve">
+    <value>Ultima riga</value>
+  </data>
+  <data name="SortAscending" xml:space="preserve">
+    <value>Ordina in modo crescente</value>
+  </data>
+  <data name="SortDescending" xml:space="preserve">
+    <value>Ordina in modo decrescente</value>
+  </data>
+  <data name="NoSort" xml:space="preserve">
+    <value>Nessun ordinamento</value>
+  </data>
+  <data name="Filter" xml:space="preserve">
+    <value>Filtro</value>
+  </data>
+  <data name="FilterActive" xml:space="preserve">
+    <value>Filtro attivo</value>
+  </data>
+  <data name="FilterMenu" xml:space="preserve">
+    <value>Filtro...</value>
+  </data>
+  <data name="ClearFilter" xml:space="preserve">
+    <value>Rimuovi filtro</value>
+  </data>
+  <data name="HiddenColumns" xml:space="preserve">
+    <value>Colonne nascoste</value>
+  </data>
+  <data name="VisibleColumns" xml:space="preserve">
+    <value>Colonne visibili</value>
+  </data>
+  <data name="ShowAllColumns" xml:space="preserve">
+    <value>Mostra tutte le colonne</value>
+  </data>
+  <data name="ShowSelectedColumns" xml:space="preserve">
+    <value>Mostra le colonne selezionate</value>
+  </data>
+  <data name="HideSelectedColumns" xml:space="preserve">
+    <value>Nascondi le colonne selezionate</value>
+  </data>
+  <data name="HideAllColumns" xml:space="preserve">
+    <value>Nascondi tutte le colonne</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annulla</value>
+  </data>
+  <data name="Post" xml:space="preserve">
+    <value>Conferma</value>
+  </data>
+  <data name="EditRow" xml:space="preserve">
+    <value>Modifica</value>
+  </data>
+  <data name="InsertRow" xml:space="preserve">
+    <value>Inserisci</value>
+  </data>
+  <data name="RemoveRow" xml:space="preserve">
+    <value>Elimina</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Azzera</value>
+  </data>
+  <data name="IncludeNull" xml:space="preserve">
+    <value>Includi null</value>
+  </data>
+  <data name="IncludeNullOrEmpty" xml:space="preserve">
+    <value>Includi null/vuoto</value>
+  </data>
+  <data name="Contains" xml:space="preserve">
+    <value>Contiene</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Valore</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>Da</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>A</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>Tutti</value>
+  </data>
+  <data name="True" xml:space="preserve">
+    <value>Vero</value>
+  </data>
+  <data name="False" xml:space="preserve">
+    <value>Falso</value>
+  </data>
+  <data name="SelectAll" xml:space="preserve">
+    <value>Seleziona tutto</value>
+  </data>
+  <data name="SelectRow" xml:space="preserve">
+    <value>Seleziona riga</value>
+  </data>
+  <data name="MoveRowUp" xml:space="preserve">
+    <value>Sposta riga in su</value>
+  </data>
+  <data name="MoveRowDown" xml:space="preserve">
+    <value>Sposta riga in giù</value>
+  </data>
+  <data name="ShowValidationError" xml:space="preserve">
+    <value>Mostra l'errore di validazione</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>Caricamento</value>
+  </data>
+  <data name="GridLayout" xml:space="preserve">
+    <value>Layout della griglia</value>
+  </data>
+  <data name="GridLayoutFiltered" xml:space="preserve">
+    <value>Layout della griglia - Dati filtrati</value>
+  </data>
+  <data name="Empty" xml:space="preserve">
+    <value>...vuoto...</value>
+  </data>
+  <data name="InvalidRange" xml:space="preserve">
+    <value>Intervallo non valido</value>
+  </data>
+  <data name="Expand" xml:space="preserve">
+    <value>Espandi</value>
+  </data>
+  <data name="Collapse" xml:space="preserve">
+    <value>Comprimi</value>
+  </data>
+  <data name="Zoom" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="ZoomIn" xml:space="preserve">
+    <value>Zoom avanti</value>
+  </data>
+  <data name="ZoomOut" xml:space="preserve">
+    <value>Zoom indietro</value>
+  </data>
+  <data name="ZoomOutAll" xml:space="preserve">
+    <value>Esci dallo zoom</value>
+  </data>
+  <data name="Editing" xml:space="preserve">
+    <value>In modifica</value>
+  </data>
+  <data name="Inserting" xml:space="preserve">
+    <value>In inserimento</value>
+  </data>
+  <data name="Total" xml:space="preserve">
+    <value>TOTALE</value>
+  </data>
+  <data name="SubTotal" xml:space="preserve">
+    <value>tot:</value>
+  </data>
+  <data name="Label" xml:space="preserve">
+    <value>Etichetta</value>
+  </data>
+  <data name="PreferredSize" xml:space="preserve">
+    <value>Dim. pref.</value>
+  </data>
+  <data name="ShowRow" xml:space="preserve">
+    <value>Mostra la riga con tutte le colonne</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>Ricarica i dati</value>
+  </data>
+  <data name="Row" xml:space="preserve">
+    <value>Riga</value>
+  </data>
+  <data name="Column" xml:space="preserve">
+    <value>Colonna</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Chiudi</value>
+  </data>
+</root>

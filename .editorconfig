@@ -1,0 +1,16 @@
+root = true
+
+# Edited as CRLF; .gitattributes (text=auto) stores LF in the repository, so a CRLF save elsewhere than Windows is normalized on commit
+[*]
+end_of_line = crlf
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+# Project, solution, JSON and YAML files are indented by 2, as Visual Studio and the tools write them
+[*.{csproj,props,targets,slnx,json,yml,yaml}]
+indent_size = 2
+
+# Two trailing spaces are a line break in Markdown
+[*.md]
+trim_trailing_whitespace = false

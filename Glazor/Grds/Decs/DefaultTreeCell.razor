@@ -1,0 +1,100 @@
+﻿@namespace Glazor.Grds.Decs
+
+@using Glazor.Grds
+@using Glazor.Misc
+@using Glazor.Grds.Mdls
+
+@typeparam TGridItem
+
+@inject IServiceProvider Services
+
+@code {
+    private IGlazorTexts? _texts;
+    private IGlazorTexts Texts => _texts ??= GlazorTexts.Resolve(Services);
+
+    /// <summary>The cell to draw, as <c>TreeCellTemplate</c> receives it.</summary>
+    [Parameter]
+    public Treegliaria<TGridItem>.CellTemplateParam Param { get; set; } = null!;
+
+    /// <summary>The label of the node: drawn after the expander in place of the expansion column's own value.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>The offset added to the real node level to obtain the indentation level, 0 by default.</summary>
+    protected virtual int GetIndentLevelOffset(ITreeGridModel<TGridItem> model) => 0;
+
+    private RenderFragment Value(IGrigliaria<TGridItem>.CellTemplateParam cellParam) => ChildContent == null
+        ? @<DefaultCell Param="@cellParam"></DefaultCell>
+        : @<DefaultCell Param="@cellParam" Class="label" Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@ChildContent</DefaultCell>;
+
+    // An indent, a spacer or a total takes the clicks the label's cell takes: under the cell cursor those are bound to each cell
+    private RenderFragment RowMouse(IGrigliaria<TGridItem>.CellTemplateParam cellParam) => __builder =>
+    {
+        if (!cellParam.Grid.IsCellCursorEnabled())
+            return;
+        <MouseAction Type="MouseAction.MouseType.Click" BindAncestorWithTag="td"
+            OnMouse="@(async (evt) => await cellParam.Grid.RowClickedAsync(cellParam.RowIdx, cellParam.ColIdx))"
+            Enabled="@(!cellParam.Model.IsCurrentRowFrozen() || cellParam.Grid.IsFastEdit)"/>
+        <MouseAction Type="MouseAction.MouseType.DblClick" BindAncestorWithTag="td"
+            OnMouse="@(async (evt) => await cellParam.Grid.DblClickAsync(cellParam.RowIdx, cellParam.ColIdx))"
+            Enabled="@(!cellParam.Model.IsCurrentRowFrozen())"/>
+    };
+}
+
+@{
+    IGrigliaria<TGridItem>.CellTemplateParam cellParam = Param.CellParam;
+    ITreeNode node = Param.Model.GetTreeNode(cellParam.RowIdx);
+    string nodeClass = node.IsLeaf() ? "leaf" :
+      node.IsSubTotal() ? "subTotal" :
+        node.IsExpanded() ? "expanded" :
+                            "collapsed";
+    int realLevel = node.GetLevel();
+    int indentLevel = Math.Max(0, realLevel + GetIndentLevelOffset(Param.Model));
+    string colName = Param.Model.GetColumnName(cellParam.ColIdx);
+    if (colName != Param.Grid.TreeColumnName) {
+        @if (Param.Grid.CellTemplate != null)
+        {
+            @Param.Grid.CellTemplate(cellParam);
+        }
+        else
+        {
+            <DefaultCell param="@cellParam" Class="@nodeClass"/>
+        }
+    }
+    else {
+        // the indent column
+        <td class="indent" @key="@("td" + cellParam.RowIdx + "c" + cellParam.ColIdx)" align="left" width="100%" style="padding: 0px">
+            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="table-layout: fixed" role="presentation">
+            <tr>
+                @for(int ind = 0; ind < indentLevel; ind++) {
+                    <td style="width: 10px;border-right: 2px dotted var(--glazor-tree-indent); @(Param.Grid.RowHeight == null ? "" : $"height:{Param.Grid.RowHeight}px")">@RowMouse(cellParam)</td>
+                }
+                @if (node.HasChildren()) {
+                    <td class="expandable" style="width:20px;">
+                        @* the grid handles the click: this cell, rendered first, would read the model before the grid's fetch and its spinner *@
+                        <Anchor OnClick="@EventCallback.Factory.Create(Param.Grid, () => Param.Grid.ToggleExpandAsync(cellParam.RowIdx))" Disabled=@(Param.Model.IsCurrentRowFrozen())
+                            Title="@Texts.Get(node.IsExpanded() ? TextKeys.Collapse : TextKeys.Expand)" aria-expanded="@(node.IsExpanded() ? "true" : "false")">
+                            <span class="glazor icon @(node.IsExpanded() ? "tree-collapse" : "tree-expand")" aria-hidden="true"></span>
+                        </Anchor>
+                    </td>
+                    @Value(cellParam)
+                }
+                else {
+                    if (node.IsSubTotal()) {
+                        <td class="@(realLevel == 0 ? "total" : "subTotal")" width="100%">
+                            @Texts.Get(realLevel == 0 ? TextKeys.Total : TextKeys.SubTotal)
+                            @RowMouse(cellParam)
+                        </td>
+                    }
+                    else {
+                        <td style="width:20px;">
+                            @RowMouse(cellParam)
+                        </td>
+                        @Value(cellParam)
+                    }
+                }
+            </tr>
+            </table>
+        </td>
+    }
+}

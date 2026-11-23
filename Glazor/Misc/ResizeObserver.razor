@@ -1,0 +1,119 @@
+﻿@namespace Glazor.Misc
+
+@inject IJSRuntime JS
+@inject ILogger<ResizeObserver> Logger
+@implements IAsyncDisposable 
+
+@code {
+    /// <summary>Required. Raised with the element's new width and height.</summary>
+    [Parameter, EditorRequired]
+    public EventCallback<ResizeEvent> OnResize { get; set; }
+
+    /// <summary>Required. The element observed.</summary>
+    [Parameter, EditorRequired]
+    public ElementReference ObservedRef { get; set; }
+
+    /// <summary>Pauses the observation without unmounting the component.</summary>
+    [Parameter]
+    public bool Enabled { get; set; } = true;
+
+    private IJSObjectReference? module;
+    // https://learn.microsoft.com/en-us/aspnet/core/blazor/javascript-interoperability/call-dotnet-from-javascript?view=aspnetcore-10.0
+    private DotNetObjectReference<ResizeObserver>? dotNetObjRef;
+
+    private ElementReference _lastObservedRef;
+    private bool _lastEnabled;
+
+    /// <inheritdoc/>
+    protected override void OnInitialized()
+    {
+        dotNetObjRef = DotNetObjectReference.Create(this);
+    }
+
+    /// <inheritdoc/>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && module == null)
+        {
+            // https://learn.microsoft.com/en-us/aspnet/core/blazor/components/class-libraries?view=aspnetcore-10.0&tabs=visual-studio
+            IJSObjectReference imported = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Glazor/Misc/ResizeObserver.razor.js");
+            if (_disposed)
+            {
+                await imported.DisposeAsync();   // disposed while the import was in flight
+                return;
+            }
+            module = imported;
+        }
+        // It's not enough on firstRender and sometimes firstRender and !firstRender are executed "together"
+        if (module != null && !string.IsNullOrEmpty(ObservedRef.Id) && 
+            (ObservedRef.Id != _lastObservedRef.Id || Enabled != _lastEnabled))
+        {
+            ElementReference previous = _lastObservedRef;
+            _lastObservedRef = ObservedRef;
+            _lastEnabled = Enabled;
+            try {
+                if (!string.IsNullOrEmpty(previous.Id) && previous.Id != ObservedRef.Id)
+                    await module.InvokeVoidAsync("cleanup", previous);   // one still in the page would keep reporting; a removed one arrives as null
+                await module.RequireNotNull().InvokeVoidAsync("registerResizeObserverCallback", ObservedRef, dotNetObjRef.RequireNotNull(),
+                        nameof(ProcessResize), Enabled);
+            }
+            catch (ObjectDisposedException e) {
+                if (Logger.IsEnabled(LogLevel.Trace))
+                    Logger.LogTrace("As far as I know this can be safely ignored: {msg}", e.Message);
+            }
+        }
+    }
+
+    private bool _disposed;
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        _disposed = true;
+        if (module != null)
+        {
+            try
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(_lastObservedRef.Id))
+                        await module.InvokeVoidAsync("cleanup", _lastObservedRef);
+                }
+                finally
+                {
+                    await module.DisposeAsync();
+                }
+            }
+            catch (Exception ex) when (ex is JSDisconnectedException or TaskCanceledException)
+            {
+                // Ignore
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error while disposing ResizeObserver");
+            }
+            module = null;
+        }
+        dotNetObjRef?.Dispose();
+        ObservedRef = default;
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Called by the JS side when the element changes size.</summary>
+    [JSInvokable, System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]   // for the JS side, not for hosts
+    public async Task ProcessResize(double width, double height)
+    {
+        try
+        {
+            await OnResize.InvokeAsync(new ResizeEvent(width, height));
+        }
+        catch (Exception ex) when (!_disposed)
+        {
+            await DispatchExceptionAsync(ex);
+        }
+    }
+
+    /// <summary>The observed element's new size, as <c>OnResize</c> reports it.</summary>
+    /// <param name="Width">The width of its content box, in CSS pixels.</param>
+    /// <param name="Height">The height of its content box, in CSS pixels.</param>
+    public record ResizeEvent(double Width, double Height);
+}

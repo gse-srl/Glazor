@@ -1,0 +1,30 @@
+﻿@* see: https://www.meziantou.net/validating-an-input-on-keypress-instead-of-on-change-in-blazor.htm *@
+
+@namespace Glazor.Misc
+
+@using Microsoft.AspNetCore.Components.Forms
+
+@inherits InputText
+
+@* Bind the oninput event *@
+<input @attributes="AdditionalAttributes"
+        @ref="Element"
+        class="@CssClass"
+        @bind-value="CurrentValueAsString" @bind-value:event="oninput" />
+
+@code {
+    /// <summary>Focuses the input once, at the first render.</summary>
+    [Parameter]
+    public bool FocusOnFirstRender { get; set; }
+
+    // The element is captured into the inherited InputText.Element, so consumers can focus or measure it as they
+    // would with a plain InputText.
+    /// <inheritdoc/>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && FocusOnFirstRender && Element.HasValue)
+        {
+            await Element.Value.FocusAsync();
+        }
+    }
+}

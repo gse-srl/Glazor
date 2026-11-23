@@ -1,0 +1,57 @@
+﻿/* Paper, a light theme of warm neutrals: the --glazor-* custom properties of glazor.css with its values, ink blue for the
+   current row and the main buttons, rust for the accents, and small capitals in the grid's header. Link it after
+   glazor.css, on a page with a light background of its own, such as #f7f3ea. */
+:root {
+    --glazor-color-scheme: light;
+    --glazor-fg: #2b2620;
+    --glazor-link: #234a74;
+    --glazor-header-bg: #ece4d3;
+    --glazor-header-fixed-bg: #f2ecdf;
+    --glazor-header-fg: #5b4f3d;
+    --glazor-header-border: #d6cbb4;
+    --glazor-rule: #d6cbb4;
+    --glazor-row-odd-bg: #fffdf8;
+    --glazor-row-even-bg: #f8f3e8;
+    --glazor-row-current-bg: #e3ebf3;
+    --glazor-row-edited-bg: #d6e2ef;
+    --glazor-cell-current-bg: #c5d6ea;
+    --glazor-no-data-fg: #6d6151;
+    --glazor-focus-outline: #2c5d8f;
+    --glazor-tree-indent: #efe7d6;
+    --glazor-scroll-track-bg: #f1eadb;
+    --glazor-scroll-handle-bg: #c9b99a;
+    --glazor-scroll-button-bg: #e2d7c2;
+    --glazor-button-bg: #f2ecdf;
+    --glazor-button-fg: #2b2620;
+    --glazor-primary-bg: #234a74;
+    --glazor-primary-fg: #fffdf8;
+    --glazor-popup-bg: #fffdf8;
+    --glazor-popup-border: #ddd2bc;
+    --glazor-popup-shadow: 0 6px 18px rgba(80, 60, 30, 0.15);
+    --glazor-popup-hover-bg: #f4eee2;
+    --glazor-overlay-shadow: 0 12px 32px rgba(80, 60, 30, 0.22);
+    --glazor-backdrop: rgba(43, 38, 32, 0.4);
+    --glazor-spinner: #234a74;
+    --glazor-spinner-backdrop: rgba(43, 38, 32, 0.15);
+    --glazor-clamper-mark: #f4e1a1;
+    --glazor-clamper-popup-bg: #fffdf8;
+    --glazor-clamper-popup-border: #8a7b63;
+    --glazor-message-bg: #fffdf8;
+    --glazor-message-border: #b3402a;
+    --glazor-message-icon: #b3402a;
+    --glazor-message-icon-bg: #fffdf8;
+    --glazor-icon-accent: #b35c1e;
+    --glazor-tab-border: #d6cbb4;
+    --glazor-tab-secondary-border: #e4dccb;
+    --glazor-tab-bg: #fffdf8;
+    --glazor-tab-label-inactive-bg: #efe7d6;
+    --glazor-tab-label-disabled-bg: #f2ecdf;
+    --glazor-tab-label-fg: #2b2620;
+    --glazor-tab-label-inactive-fg: #6d6151;
+    --glazor-tab-label-disabled-fg: #a89c85;
+}
+
+div.glazor.grigliaria thead th {
+    font-variant: small-caps;
+    letter-spacing: 0.04em;
+}

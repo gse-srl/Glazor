@@ -1,0 +1,45 @@
+﻿@page "/music"
+@using Glazor.Grds.Decs
+@using Glazor.Grds.Mdls
+
+<PageTitle>Glazor demo - EF folder tree</PageTitle>
+<h1>Treegliaria over an EFFolderModel</h1>
+<p>The 275 artists of the Chinook database, in SQLite, read 50 at a time as you page; an artist's albums and an album's tracks are
+    read the first time you expand it, 25 at a time, and kept: expand the "More…" row below them for the next 25. "All genres" is
+    a folder of the page's own, which no table holds, over the genres and their tracks. The Name column draws the tree, named by
+    <code>TreeColumn</code>, and <code>TreeCellTemplate</code> its labels, folders in bold, as a link that opens or closes them.
+    Sort by name and the database sorts every level it pages; a filter keeps a folder shown while something read below it
+    matches: expand an album or two, then filter the name.
+    <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>↓</kbd> and <kbd>↑</kbd> expand and collapse everything below the current row;
+    <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>→</kbd> zooms in on it and <kbd>←</kbd> zooms back out,
+    as the buttons and the path in the bar above the header do.</p>
+
+<Treegliaria TGridItem="MusicNode" Model="_model" Spinner="@Gui.Spinner" RowHeight="32" HeaderHeight="40" RowDialogEnabled="true" ReloadEnabled="true" Layoutable="true"
+             TreeColumn="Name"
+             VertResizer="@(GridVertResizers.RowHeight("flex: 1 1 0; min-height: 12rem;", 4, 60))"
+             HorzResizer="@(GridHorzResizers.DispUnitWidth(40, 100, 12))">
+    <TreeCellTemplate>
+        @{ int row = context.CellParam.RowIdx; MusicNode node = context.Model.GetItem(row); ITreeNode treeNode = context.Model.GetTreeNode(row); }
+        <DefaultTreeCell Param="context">
+            @if (treeNode.HasChildren())
+            {
+                <Anchor OnClick="@(async () => await context.Grid.ToggleExpandAsync(row))" Disabled="@context.Model.IsCurrentRowFrozen()"
+                        style="@LabelStyle(node, treeNode)">@node.Name</Anchor>
+            }
+            else
+            {
+                <span style="@LabelStyle(node, treeNode)">@node.Name</span>
+            }
+        </DefaultTreeCell>
+    </TreeCellTemplate>
+    <ChildContent>
+        <GridColumn EFProperty="@(x => x.Name)" Name="Name" Label="Name" PreferredSize="40" />
+        <GridColumn Property="@(x => x.Kind)" Name="Kind" Label="Kind" PreferredSize="8" />
+        <GridColumn Property="@(x => x.Items)" Name="Items" Label="Items" PreferredSize="7" Alignment="Alignment.Right" />
+        <GridColumn Property="@(x => x.Composer)" Name="Composer" Label="Composer" PreferredSize="28" />
+        <GridColumn Property="@(x => x.Milliseconds)" Name="Length" Label="Length" PreferredSize="8" Alignment="Alignment.Right">
+            <DisplayTemplate>@(context.Value is int ms ? TimeSpan.FromMilliseconds(ms).ToString(@"m\:ss") : "")</DisplayTemplate>
+        </GridColumn>
+        <GridColumn Property="@(x => x.UnitPrice)" Name="Price" Label="Price" PreferredSize="7" Alignment="Alignment.Right" />
+    </ChildContent>
+</Treegliaria>

@@ -1,0 +1,593 @@
+﻿@typeparam TGridItem
+@inherits ADataGrid<TGridItem>
+
+@*
+    see: https://github.com/dotnet/razor/issues/9683
+    @rendermode InteractiveServer
+*@
+
+@using Glazor.Grds.Decs
+@using Glazor.Grds.Filters
+@using Glazor.Grds.Mdls
+@using Glazor.Misc
+
+<div @ref="vertHeightRef" style="@(VertResizer?.GetHeightRefStyles())" class="glazor grigliaria">
+@* This div is used as an "anchor" for KeyAction(s), you can add your own in the GridColumns fragment *@
+<div @ref="mainDivRef" tabindex="0"> @* a Tab stop, so a grid with no link or button is reachable too; the keys need a tabindex anyway *@
+    @{ StartCollectingColumns(); }
+    <CascadingValue TValue="Grigliaria<TGridItem>" Value="@this" IsFixed>
+        @ChildContent
+        @* We must draw things after that all the GridColumn(s) have been registered *@
+        <Defer>
+        @{
+            EndCollectingColumns();
+            SyncBeforeRendering();
+            rowViewDlg?.GridSynced();
+
+            IDataGridModel<TGridItem> model = GetModel();
+
+            var shownColumns = GetShownColumns();
+            bool isHorzScrollable = GetHorzDisplayedUnits() >= 0;
+
+            bool isSortable = model.IsSortable();
+
+            int columnsCount;
+            int idx;
+            int totPSize;
+            int pToDistrib;
+            string[] columnNames = new string[shownColumns.Count()];
+            int[] realColumnIndexes = new int[columnNames.Length];
+            int firstNotFixedColIdx = -1;
+            IColumn<TGridItem>[] columns = new IColumn<TGridItem>[columnNames.Length];
+            {
+                IColumn<TGridItem> column;
+                int sizeSum = 0;
+                int nosizeCol = 0;
+                int totcol = 0;
+                int i = 0;
+                foreach (string fname in shownColumns) {
+                    columnNames[i] = fname;
+                    realColumnIndexes[i] = model.GetColumnIndex(fname);
+                    if (realColumnIndexes[i] < 0)
+                        throw new InvalidOperationException($"Column not found: {fname}");
+                    column = GetColumn(realColumnIndexes[i]);
+                    columns[i] = column;
+                    if (firstNotFixedColIdx < 0 && !column.IsFixed())
+                        firstNotFixedColIdx = i;
+                    int psize = column.GetPreferredSize();
+                    totcol++;
+                    if (psize >= 0)
+                        sizeSum += psize;
+                    else
+                        nosizeCol++;
+                    i++;
+                }
+                // Columns with no preferred size render "auto" and are left a share of the width in
+                // proportion to how many of them there are; the sized columns divide up what remains.
+                int pToNoSize = totcol > 0 ? 100 * nosizeCol / totcol : 0;
+                pToDistrib = 100 - pToNoSize;
+                totPSize = sizeSum;
+            }
+
+            string?[] groupIds = new string[columns.Length];
+            int[] groupSpans = new int[columns.Length];
+            if (ShowColumnGroups) {
+                string? oldGroup = null;
+                int groupIdx = 0;
+                for (int i = 0; i < columns.Length; i++) {
+                    string? group = columns[i].GetGroupId();
+                    if (group == null) {
+                        groupIds[groupIdx] = null;
+                        groupSpans[groupIdx] = 1;
+                        groupIdx++;
+                    }
+                    else if (!group.Equals(oldGroup)) {
+                        groupIds[groupIdx] = group;
+                        groupSpans[groupIdx] = 1;
+                        groupIdx++;
+                    }
+                    else {
+                        groupSpans[groupIdx - 1]++;
+                    }
+                    oldGroup = group;
+                }
+            }
+
+            bool isFiltered = model.IsFiltered();
+            const bool showVScrollBar = true;
+            int extraCols = isHorzScrollable && ShowHeader ? 1 : 0;   // the left edge column beside the row heading
+            const bool showHScrollBar = true;
+            int pageSize = GetPageSize();
+            int headerRows = !ShowHeader ? 0 : ShowColumnGroups ? 2 : 1;   // aria-rowindex counts them; the rule row shown instead of a header is hidden
+            int totalRows = model.GetRowCount();
+        }
+        <table class="glazor grigliaria" aria-rowcount="@(totalRows == int.MaxValue ? "-1" : (Math.Max(totalRows, 1) + headerRows).ToString())" aria-label="@AriaLabel">   @* the "...empty..." row counts *@
+            <colgroup>
+                <col width="@(EditableModel != null ? 44 : 20)"/>   @* room for Cancel and Post *@
+                @if (isHorzScrollable && ShowHeader)
+                {
+                    <col width="10"/>
+                }
+                @{{
+                    IColumn<TGridItem> colMD;
+                    columnsCount = 1;
+                    for (int i = 0; i < columns.Length; i++)
+                    {
+                        colMD = columns[i];
+                        columnsCount++;
+                        int psize = colMD.GetPreferredSize();
+                        // This column's share of the sized columns, scaled to the percentage those
+                        // columns collectively get.
+                        String width = (psize < 0 || totPSize == 0) ?
+                            "auto" : (psize * pToDistrib / totPSize) + "%";
+                        <col width="@width"/>
+                    }
+                }}
+                @if (isHorzScrollable && ShowHeader || showVScrollBar)
+                {
+                    <col width="10"/>
+                }
+            </colgroup>
+            <thead>
+                @if (ShowColumnGroups && ShowHeader)
+                {
+                    <tr @key="@("trg")" aria-rowindex="1">
+                        <th class="fixed tool" scope="col" height="@HeaderHeight" rowspan="2">
+                            @if (Layoutable)
+                            {
+                                <Anchor OnClick="OnLayoutAsync" Title="@Texts.Get(isFiltered ? TextKeys.GridLayoutFiltered : TextKeys.GridLayout)" Disabled="@(Model.IsCurrentRowFrozen())">
+                                    <span class="glazor icon layout @(isFiltered ? "accent" : "")" title="@Texts.Get(isFiltered ? TextKeys.GridLayoutFiltered : TextKeys.GridLayout)" aria-hidden="true"></span>
+                                </Anchor>
+                            }
+                            else
+                            {
+                                <span>&nbsp;</span>
+                            }
+                        </th>
+                        @if (isHorzScrollable)
+                        {
+                            <th class="fixed tool" scope="col" rowspan="2">
+                                <Anchor OnClick="PrevCol" Disabled="@(!CanPrevCol())" Title="@Texts.Get(TextKeys.ColumnLeft)">
+                                    <span class="glazor icon chevron-left" aria-hidden="true"></span>
+                                </Anchor>
+                            </th>
+                        }
+                        @{{
+                            IColumn<TGridItem> colMD;
+                            int groupIdx = 0;
+                            int spans = 0;
+                            for (int i = 0; i < columns.Length; i++)
+                            {
+                                colMD = columns[i];
+                                string? groupId = groupIds[groupIdx];
+                                if (groupId == null)
+                                {
+                                    {
+                                        var param = new IGrid<TGridItem>.HCellTemplateParam(this, model, realColumnIndexes[i], colMD, 1, 2,
+                                            new ColumnPlace(firstNotFixedColIdx, GetDeltaColIdx() + i));
+                                        @if (HCellTemplate != null)
+                                        {
+                                            @HCellTemplate(param);
+                                        }
+                                        else
+                                        {
+                                            <DefaultHCell param="@param" />
+                                        }
+                                    }
+                                    if (++spans >= groupSpans[groupIdx])
+                                    {
+                                        groupIdx++;
+                                        spans = 0;
+                                    }
+                                }
+                                else
+                                {
+                                    int gspan = groupSpans[groupIdx];
+                                    int[] colIdxs = new int[gspan];
+                                    Array.Copy(realColumnIndexes, i, colIdxs, 0, gspan);
+                                    {
+                                        var param = new IGrid<TGridItem>.GHCellTemplateParam(this, model, groupIds[groupIdx].RequireNotNull(),
+                                            gspan, 1, colIdxs);
+                                        @if (GHCellTemplate != null)
+                                        {
+                                            @GHCellTemplate(param);
+                                        }
+                                        else
+                                        {
+                                            <DefaultGHCell param="@param" />
+                                        }
+                                    }
+                                    i += gspan - 1;
+                                    groupIdx++;
+                                    spans = 0;
+                                }
+                            }
+                            if (isHorzScrollable || showVScrollBar)
+                            {
+                                <th class="fixed tool" scope="col" rowspan="2">
+                                    @if (isHorzScrollable)
+                                    {
+                                        <Anchor OnClick="NextCol" Disabled="@(!CanNextCol())" Title="@Texts.Get(TextKeys.ColumnRight)">
+                                            <span class="glazor icon chevron-right" aria-hidden="true"></span>
+                                        </Anchor>
+                                    }
+                                </th>
+                            }
+                        }}
+                    </tr>
+                }
+                <tr @key="@("trh")" aria-rowindex="@(ShowHeader ? headerRows.ToString() : null)" aria-hidden="@(ShowHeader ? null : "true")">
+                    @if (ShowHeader)
+                    {
+                        IColumn<TGridItem> colMD;
+                        if (!ShowColumnGroups)
+                        {
+                            <th class="fixed tool" scope="col" height="@HeaderHeight">
+                                @if (Layoutable)
+                                {
+                                    <Anchor OnClick="OnLayoutAsync" Title="@Texts.Get(isFiltered ? TextKeys.GridLayoutFiltered : TextKeys.GridLayout)" Disabled="@(Model.IsCurrentRowFrozen())">
+                                        <span class="glazor icon layout @(isFiltered ? "accent" : "")" title="@Texts.Get(isFiltered ? TextKeys.GridLayoutFiltered : TextKeys.GridLayout)" aria-hidden="true"></span>
+                                    </Anchor>
+                                }
+                                else
+                                {
+                                    <span>&nbsp;</span>
+                                }
+                            </th>
+                            @if (isHorzScrollable)
+                            {
+                                <th class="fixed tool" scope="col">
+                                    <Anchor OnClick="PrevCol" Disabled="@(!CanPrevCol())" Title="@Texts.Get(TextKeys.ColumnLeft)">
+                                        <span class="glazor icon chevron-left" aria-hidden="true"></span>
+                                    </Anchor>
+                                </th>
+                            }
+                        }
+                        int groupIdx = 0;
+                        int spans = 0;
+                        for (int i = 0; i < columns.Length; i++) {
+                            colMD = columns[i];
+                            string? groupId = ShowColumnGroups ? groupIds[groupIdx] : "";
+                            if (groupId != null) {
+                                var param = new IGrid<TGridItem>.HCellTemplateParam(this, model, realColumnIndexes[i], colMD, 1, 1,
+                                    new ColumnPlace(firstNotFixedColIdx, GetDeltaColIdx() + i));
+                                @if (HCellTemplate != null)
+                                {
+                                    @HCellTemplate(param);
+                                }
+                                else
+                                {
+                                    <DefaultHCell param="@param" />
+                                }
+                            }
+                            if (++spans >= groupSpans[groupIdx]) {
+                                groupIdx++;
+                                spans = 0;
+                            }
+                        }
+                        @if (!ShowColumnGroups && (isHorzScrollable || showVScrollBar))
+                        {
+                            <th class="fixed tool" scope="col">
+                                @if (isHorzScrollable)
+                                {
+                                    <Anchor OnClick="NextCol" Disabled="@(!CanNextCol())" Title="@Texts.Get(TextKeys.ColumnRight)">
+                                        <span class="glazor icon chevron-right" aria-hidden="true"></span>
+                                    </Anchor>
+                                }
+                            </th>
+                        }
+                    }
+                    else
+                    {
+                        <td class="rule" colspan="@(columnsCount + extraCols + (showVScrollBar ? 1 : 0))"></td>
+                    }
+                </tr>
+            </thead>
+            <tbody @key="@("body")" @ref="bodyRef">
+                @if (showVScrollBar)
+                {
+                    <tr @key="@("trsb")" aria-hidden="true">
+                        <td style="height:0px"></td>
+                        @if (isHorzScrollable && ShowHeader)
+                        {
+                            <td style="height:0px"></td>
+                        }
+                        @for (int i = 0; i < columns.Length; i++)
+                        {
+                            <td style="height:0px"></td>
+                        }
+                        @{
+                            int pageIdx = GetPageIdx();
+                            int rowCount = model.GetRowCount() != int.MaxValue ?
+                                model.GetRowCount() : model.GetCurrentRowCount() * 2;
+                            <td @key="@("scrollBar")" rowspan="@(pageSize + 1)">
+                                <Scroller RowCount="@rowCount" PageSize="@pageSize" PageIdx="@pageIdx"
+                                    Enabled="@(!model.IsCurrentRowFrozen())" OnScrollTo="@(y => { ScrollTo(y); })"
+                                    SizeTrick="@GetLastSize().height"/>
+                            </td>
+                        }
+                    </tr>
+                }
+                @{{
+                    int rowCount = model.GetRowCount();
+                    if (rowCount <= 0)
+                    {
+                        <tr @key="@("tr0")" aria-rowindex="@(1 + headerRows)">
+                            @{{
+                                var param = new IGrid<TGridItem>.EmptyRowTemplateParam(this, model, 0);
+                                @if (EmptyRowCellTemplate != null)
+                                {
+                                    @EmptyRowCellTemplate(param);
+                                }
+                                else
+                                {
+                                    <DefaultEmptyRow param="@param" />
+                                }
+                            }}
+                            <td valign="middle" colspan="@Math.Max(1, columnsCount - 1 + extraCols)">
+                                <span class="noData">@Texts.Get(TextKeys.Empty)</span>
+                            </td>
+                        </tr>
+                        for (int i = 1; i < pageSize; i++)
+                        {
+                            <tr @key="@("tr" + i)" aria-hidden="true">
+                                @{
+                                    var param = new IGrid<TGridItem>.EmptyRowTemplateParam(this, model, i);
+                                    @if (EmptyRowCellTemplate != null)
+                                    {
+                                        @EmptyRowCellTemplate(param);
+                                    }
+                                    else
+                                    {
+                                        <DefaultEmptyRow param="@param" />
+                                    }
+                                }
+                                <td valign="middle" colspan="@Math.Max(1, columnsCount - 1 + extraCols)">
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        @for (idx = GetPageIdx(); idx < rowCount && idx < (GetPageIdx() + pageSize); idx++)
+                        {
+                            bool isCurrentRow = idx == model.GetCurrentRow();
+                            bool isEditedRow = isCurrentRow && model.IsCurrentRowFrozen();
+                            <tr @key="@("tr" + idx)" class="@(isEditedRow ? "edited" : isCurrentRow ? "current" : (idx % 2) == 0 ? "even" : "odd")"
+                                aria-rowindex="@(idx + 1 + headerRows)" aria-current="@(isCurrentRow ? "true" : null)">
+                                @{{
+                                    var param = new IGrigliaria<TGridItem>.RowHeadingTemplateParam(this, model, idx);
+                                    @if (RowHeadingTemplate != null)
+                                    {
+                                        @RowHeadingTemplate(param);
+                                    }
+                                    else
+                                    {
+                                        <DefaultRowHeading param="@param" />
+                                    }
+                                }}
+                                @if (isHorzScrollable && ShowHeader)
+                                {
+                                    <td>
+                                        @if (isEditedRow && HasLeadingEditEdge())
+                                        {
+                                            <EditEdge TGridItem="TGridItem" Grid="this" Step="-1" />
+                                        }
+                                    </td>
+                                }
+                                @{
+                                    IColumn<TGridItem> colMD;
+                                    @for (int i = 0; i < columns.Length; i++)
+                                    {
+                                        colMD = columns[i];
+                                        int colIdx = realColumnIndexes[i];
+                                        var param = new IGrigliaria<TGridItem>.CellTemplateParam(this, model, idx, colIdx, colMD);
+                                        @if (CellTemplate != null)
+                                        {
+                                            @CellTemplate(param);
+                                        }
+                                        else
+                                        {
+                                            <DefaultCell param="@param" />
+                                        }
+                                    }
+                                }
+                                @if (isHorzScrollable && ShowHeader && !showVScrollBar)
+                                {
+                                    <td></td>
+                                }
+                            </tr>
+                        }
+                        @for (; idx < (GetPageIdx() + pageSize); idx++)
+                        {
+                            <tr @key="@("tr" + idx)" aria-hidden="true">   @* filler, not a row of the table *@
+                                @{{
+                                    var param = new IGrid<TGridItem>.EmptyRowTemplateParam(this, model, idx);
+                                    @if (EmptyRowCellTemplate != null)
+                                    {
+                                        @EmptyRowCellTemplate(param);
+                                    }
+                                    else
+                                    {
+                                        <DefaultEmptyRow param="@param" />
+                                    }
+                                }}
+                                <td colspan="@Math.Max(1, columnsCount - 1 + extraCols)"></td>
+                            </tr>
+                        }
+                    }
+                }}
+            </tbody>
+            <tr aria-hidden="true">
+                <td class="rule" colspan="@(columnsCount + extraCols + (showVScrollBar ? 1 : 0))">
+                </td>
+            </tr>
+        </table>
+        <table class="glazor grigliaria" role="presentation">   @* the footer: buttons and the row counter, not data *@
+            <tfoot>
+                <tr>
+                    <td @key="@("tdAct")" style="padding-top:5px; display:flex;">
+                        <span @ref="_searchPopupAnchor" style="anchor-name: @($"--{_searchPopupAnchor.Id}")"></span>
+                        <Popup @ref="_searchPopup" OnClose="async () => await SearchPopupClosedAsync()" Class="searchPopup"
+                                       Style="@($"position: fixed; position-anchor: --{_searchPopupAnchor.Id}; position-area: span-end;")">
+                            <InputTextOnInput @ref="_searchInput" @bind-Value="@SearchText" autofocus FocusOnFirstRender="true" aria-label="@Texts.Get(TextKeys.SearchOnSortedColumn)"/>
+                            @* taken on the popup, so a host's own Escape around the grid does not see it *@
+                            <KeyAction Key="Escape" OnKey="@(async evt => await _searchPopup.RequireNotNull().CloseAsync())" BindAncestorWithTag="dialog"/>
+                        </Popup>
+                        @if (ShowDefaultButtons) {
+                            @if (EditableModel is { } editable) {
+                                bool edited = IsEditingInPlace;
+                                bool noRow = model.GetCurrentRow() < 0;
+                                <span style="padding-left:10px; text-wrap:nowrap;">
+                                <button type="button" class="btnEditRow" title="@Texts.Get(TextKeys.EditRow)" aria-label="@Texts.Get(TextKeys.EditRow)"
+                                    @onclick="@(async evt => await StartEditAsync())" disabled="@(edited || noRow || !editable.IsCurrentRowEditable())"/>
+                                @if (NewItem != null) {
+                                    <button type="button" class="btnInsertRow" title="@Texts.Get(TextKeys.InsertRow)" aria-label="@Texts.Get(TextKeys.InsertRow)"
+                                        @onclick="@(async evt => await InsertAsync())" disabled="@edited"/>
+                                }
+                                @if (OnRemove.HasDelegate) {
+                                    <button type="button" class="btnRemoveRow" title="@Texts.Get(TextKeys.RemoveRow)" aria-label="@Texts.Get(TextKeys.RemoveRow)"
+                                        @onclick="@(async evt => await RemoveAsync())" disabled="@(edited || noRow)"/>
+                                }
+                                </span>
+                            }
+                            @if (isSortable) {
+                                <span style="padding-left:10px;">
+                                <button type="button" class="btnSearchOnCurrentSortedColumn" title="@Texts.Get(TextKeys.SearchOnSortedColumn)" aria-label="@Texts.Get(TextKeys.SearchOnSortedColumn)"
+                                    @onclick="@(async evt => await SearchOnCurrentSortedColumnAsync())" disabled="@(!CanSearchOnCurrentSortedColumn())"/>
+                                </span>
+                            }
+                            @if (RowDialogEnabled) {
+                                <span style="padding-left:10px;">
+                                <button type="button" class="btnShowRow" title="@Texts.Get(TextKeys.ShowRow)" aria-label="@Texts.Get(TextKeys.ShowRow)"
+                                    @onclick="@(async evt => await ShowRowDialogAsync())"
+                                    disabled="@(model.GetCurrentRow() < 0 || model.IsCurrentRowFrozen() || !HasColumnsOutOfView())"/>
+                                </span>
+                            }
+                            @if (ReloadEnabled && GetReloadableModel() is { } reloadable) {
+                                <span style="padding-left:10px;">
+                                <button type="button" class="btnReload" title="@Texts.Get(TextKeys.Reload)" aria-label="@Texts.Get(TextKeys.Reload)"
+                                    @onclick="@(() => reloadable.ForceReload(true))" disabled="@model.IsCurrentRowFrozen()"/>
+                                </span>
+                            }
+                            @if (isHorzScrollable) {
+                                @if (showHScrollBar)
+                                {
+                                    <span style="padding-left:10px; text-wrap:nowrap; width:100%">
+                                    @{
+                                        int deltaIdx = GetDeltaColIdx();
+                                        int colsToShowCount = GetColumnsToShowCount();
+                                        int firstExcludedColIdx = GetFirstExcludedColIdx();
+                                        if (firstExcludedColIdx < 0)
+                                            firstExcludedColIdx = colsToShowCount;
+                                        int scrollerPageSize = firstExcludedColIdx - deltaIdx;
+                                        <Scroller RowCount="@colsToShowCount" PageSize="@scrollerPageSize" PageIdx="@deltaIdx"
+                                            Enabled="@(CanPrevCol() || CanNextCol())" OnScrollTo="@(y => { ScrollToCol(y); })"
+                                            Orientation="Scroller.OrientationType.Horizontal"
+                                            SizeTrick="@GetLastSize().width"/>
+                                    }
+                                    </span>
+                                }
+                            }
+                            if (ShowNavigationButtons) {
+                                <span style="text-wrap:nowrap">
+                                <span style="padding-left:10px">
+                                <button type="button" class="btnFirstRow" title="@Texts.Get(TextKeys.FirstRow)" aria-label="@Texts.Get(TextKeys.FirstRow)"
+                                    @onclick="@(evt => MoveToFirst())"
+                                    disabled="@(model.GetCurrentRow() <= 0 || model.IsCurrentRowFrozen())"/>
+                                <button type="button" class="btnPrevPage" title="@Texts.Get(TextKeys.PreviousPage)" aria-label="@Texts.Get(TextKeys.PreviousPage)"
+                                    @onclick="@(evt => MovePage(-1))"
+                                    disabled="@(model.GetCurrentRow() <= 0 || model.IsCurrentRowFrozen())"/>
+                                <button type="button" class="btnPrevRow" title="@Texts.Get(TextKeys.PreviousRow)" aria-label="@Texts.Get(TextKeys.PreviousRow)"
+                                    @onclick="@(evt => MoveRow(-1))"
+                                    disabled="@(model.GetCurrentRow() <= 0 || model.IsCurrentRowFrozen())"/>
+                                </span>
+                                <span style="padding-left:10px">
+                                <button type="button" class="btnNextRow" title="@Texts.Get(TextKeys.NextRow)" aria-label="@Texts.Get(TextKeys.NextRow)"
+                                    @onclick="@(evt => MoveRow(1))"
+                                    disabled="@(model.GetCurrentRow() >= model.GetRowCount() - 1 || model.IsCurrentRowFrozen())"/>
+                                <button type="button" class="btnNextPage" title="@Texts.Get(TextKeys.NextPage)" aria-label="@Texts.Get(TextKeys.NextPage)"
+                                    @onclick="@(evt => MovePage(1))"
+                                    disabled="@(model.GetCurrentRow() >= model.GetRowCount() - 1 || model.IsCurrentRowFrozen())"/>
+                                <button type="button" class="btnLastRow" title="@Texts.Get(TextKeys.LastRow)" aria-label="@Texts.Get(TextKeys.LastRow)"
+                                    @onclick="@(async evt => await MoveToLastAsync(GotoLastKnown))"
+                                    disabled="@(model.GetCurrentRow() >= model.GetRowCount() - 1 || model.IsCurrentRowFrozen())"/>
+                                </span>
+                                </span>
+                            }
+                        }
+                        @{
+                            bool popupOpen = _searchPopup != null && _searchPopup.IsVisible || IsColumnPopupOpen();   // an open popup takes the keys
+                            bool editing = model.IsCurrentRowFrozen();   // an editor in a cell keeps its own keys
+                            bool rowKeys = !popupOpen && (!editing || EditMode == EditMode.OnMove && EditableModel != null);
+                            bool colKeys = IsCellCursorEnabled() && !popupOpen && !editing;   // without a cell cursor ←/→ and Ctrl+wheel are left to the page
+                        }
+                        @* without a HorzResizer they are left to what is around the grid: the row dialog moves its row with them *@
+                        <KeyAction CtrlKey=true Key="ArrowLeft" OnKey="@(evt => PrevCol())" BindAncestorWithTag="div" Enabled="@(isHorzScrollable && !popupOpen && !editing)"/>
+                        <KeyAction CtrlKey=true Key="ArrowRight" OnKey="@(evt => NextCol())" BindAncestorWithTag="div" Enabled="@(isHorzScrollable && !popupOpen && !editing)"/>
+                        <KeyAction Key="Home" OnKey="@(evt => MoveToFirst())" BindAncestorWithTag="div" Enabled="@(!popupOpen && !editing)"/>
+                        <KeyAction Key="ArrowUp" OnKey="@(async evt => await RowKeyAsync(() => MoveRow(-1)))" BindAncestorWithTag="div" Enabled="@rowKeys" CommitFocused="true"/>
+                        <KeyAction Key="PageUp" OnKey="@(async evt => await RowKeyAsync(() => MovePage(-1)))" BindAncestorWithTag="div" Enabled="@rowKeys" CommitFocused="true"/>
+                        <KeyAction Key="ArrowDown" OnKey="@(async evt => await RowKeyAsync(() => MoveRow(1)))" BindAncestorWithTag="div" Enabled="@rowKeys" CommitFocused="true"/>
+                        <KeyAction Key="PageDown" OnKey="@(async evt => await RowKeyAsync(() => MovePage(1)))" BindAncestorWithTag="div" Enabled="@rowKeys" CommitFocused="true"/>
+                        <KeyAction Key="End" OnKey="@(async evt => await MoveToLastAsync(GotoLastKnown))" BindAncestorWithTag="div" Enabled="@(!popupOpen && !editing)"/>
+                        <KeyAction Key="ArrowLeft" OnKey="@(evt => MoveCol(-1))" BindAncestorWithTag="div" Enabled="@colKeys"/>
+                        <KeyAction Key="ArrowRight" OnKey="@(evt => MoveCol(1))" BindAncestorWithTag="div" Enabled="@colKeys"/>
+                        <KeyAction Key="@KeyAction.AnyChars" OnKey="@(async evt => await SearchOnCurrentSortedColumnAsync(evt))"
+                            Enabled="@(CanSearchOnCurrentSortedColumn() && !popupOpen)" BindAncestorWithTag="div"/>
+                        @if (RowDialogEnabled)
+                        {
+                            @* Windows' Properties key, enabled as the footer's button is *@
+                            <KeyAction AltKey=true Key="Enter" OnKey="@(async evt => await ShowRowDialogAsync())" BindAncestorWithTag="div"
+                                Enabled="@(!popupOpen && model.GetCurrentRow() >= 0 && !model.IsCurrentRowFrozen() && HasColumnsOutOfView())"/>
+                        }
+                        @if (EditableModel != null)
+                        {
+                            <KeyAction Key="F2" OnKey="@(async evt => await StartEditAsync())" BindAncestorWithTag="div" Enabled="@(!popupOpen && !editing)"/>
+                            <KeyAction CtrlKey=true Key="Insert" OnKey="@(async evt => await InsertAsync())" BindAncestorWithTag="div"
+                                Enabled="@(!popupOpen && !editing && NewItem != null)"/>
+                            <KeyAction CtrlKey=true Key="Delete" OnKey="@(async evt => await RemoveAsync())" BindAncestorWithTag="div"
+                                Enabled="@(!popupOpen && !editing && OnRemove.HasDelegate)"/>
+                            <KeyAction Key="Enter" OnKey="@(async evt => await PostAsync())" BindAncestorWithTag="div" Enabled="@IsEditingInPlace" CommitFocused="true"/>
+                            <KeyAction Key="Escape" OnKey="@(async evt => await CancelAsync())" BindAncestorWithTag="div" Enabled="@IsEditingInPlace"/>
+                        }
+                        <MouseAction Type="@MouseAction.MouseType.Wheel" OnMouse="@(evt => MoveRow(evt.WheelDelta > 0 ? 1 : -1))" BindAncestorWithTag="div"
+                            Enabled="@(!popupOpen && !editing)"/>
+                        <MouseAction CtrlKey=true Type="@MouseAction.MouseType.Wheel" OnMouse="@(evt => MoveCol(evt.WheelDelta > 0 ? 1 : -1))" BindAncestorWithTag="div"
+                            Enabled="@colKeys"/>
+                    </td>
+                    @if (ShowRowNumber) {
+                        int cr = model.GetCurrentRow();
+                        int tor = model.GetRowCount();
+                        string currentRowIndicator = cr < 0 ?
+                            "" :
+                            "" + (cr + 1) + "/" + (tor == int.MaxValue ? "..." : tor);
+                        <td @key="@("tdRowCounter")" align="right">
+                            <span class="rowCounter">@(currentRowIndicator)</span>
+                        </td>
+                    }
+                </tr>
+            </tfoot>
+        </table>
+        <TouchScroller PageSize="@pageSize" ScrollableRef="@mainDivRef" Fingers="TouchScroller.FingerCount.Two"
+            Enabled="@(TouchScrollerEnabled && !model.IsCurrentRowFrozen())" OnScrollBy="@(t => { ScrollBy(t.Dx, t.Dy); })"/>
+        <ResizeObserver ObservedRef="@bodyRef" OnResize='e => { Resized(e.Width, null); Drawn(e.Height, null); }'/>
+        <ResizeObserver ObservedRef="@vertHeightRef" OnResize='e => Resized(null, e.Height)'/>
+        <ResizeObserver ObservedRef="@mainDivRef" OnResize='e => Drawn(null, e.Height)'/>
+        </Defer>
+    </CascadingValue>
+</div>
+
+<FilterDefDlg @ref="filterDefDlg" OnFormSubmit="evt => SetFilter(evt.ColumnName, evt.FilterDef)">
+</FilterDefDlg>
+
+<LayoutDefDlg TGridItem="TGridItem" @ref="layoutDefDlg">
+</LayoutDefDlg>
+
+@if (RowDialogEnabled) {
+    <RowViewDlg TGridItem="TGridItem" @ref="rowViewDlg">
+    </RowViewDlg>
+}
+
+</div>
+

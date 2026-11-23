@@ -1,0 +1,327 @@
+﻿/* Every colour is a --glazor-* custom property of glazor.css, and every icon a mask from there: see Theming in the docs. */
+table.grigliaria ::deep {
+    table-layout: fixed;
+    border: 0px;
+    width: 100%;
+}
+
+/* the keys bind to this div: show where they go when the focus got there from the keyboard */
+div.grigliaria > div[tabindex]:focus-visible {
+    outline: 1px solid var(--glazor-focus-outline);
+    outline-offset: -1px;
+}
+
+table.grigliaria ::deep .noData {
+    font-weight: bold;
+    color: var(--glazor-no-data-fg);
+}
+
+table.grigliaria ::deep tbody td.data {
+    padding-left: 2px;
+    padding-right: 4px;
+}
+
+table.grigliaria ::deep tbody td {
+    color: var(--glazor-fg);
+}
+
+/* the sort headers, the expanders and the menu entries are links: the theme colours them too */
+table.grigliaria ::deep a.glazor {
+    color: var(--glazor-link);
+}
+
+table.grigliaria ::deep thead th {
+    background-color: var(--glazor-header-bg);
+    border-color: var(--glazor-header-border);
+    border-width: 1px;
+    border-style: solid;
+    color: var(--glazor-header-fg);
+    padding: 2px;
+    text-align: center;
+    font-size: 9pt;
+}
+
+table.grigliaria ::deep thead th.fixed {
+    background-color: var(--glazor-header-fixed-bg);
+    border-color: var(--glazor-header-border);
+}
+
+/* the layout button's and the column arrows' cells: with the padding their icons would be wider than the cell, and not centered */
+table.grigliaria ::deep thead th.tool {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+table.grigliaria ::deep td.rule {
+    height: 2px;
+    padding: 0;
+    background-color: var(--glazor-rule);
+}
+
+table.grigliaria ::deep tbody .edited {
+    background-color: var(--glazor-row-edited-bg);
+    cursor: pointer;
+}
+
+table.grigliaria ::deep tbody .current {
+    background-color: var(--glazor-row-current-bg);
+    cursor: pointer;
+}
+
+table.grigliaria ::deep tbody .odd {
+    background-color: var(--glazor-row-odd-bg);
+    cursor: pointer;
+}
+
+table.grigliaria ::deep tbody .even {
+    background-color: var(--glazor-row-even-bg);
+    cursor: pointer;
+}
+
+table.grigliaria ::deep tbody td.current {
+    background-color: var(--glazor-cell-current-bg);
+}
+
+/* the scrollbars: a track, a handle and two ends that draw an arrow icon */
+
+table.grigliaria ::deep .vertScrollBar {
+    width: 10px;
+}
+
+table.grigliaria ::deep .vertScrollBar .scrollBarTrack {
+    width: 10px;
+    position: relative;
+    background-color: var(--glazor-scroll-track-bg);
+}
+
+table.grigliaria ::deep .vertScrollBar .scrollBarHandle {
+    width: 10px;
+    height: 50px;
+    position: absolute;
+    background-color: var(--glazor-scroll-handle-bg);
+    border-radius: 5px;
+    opacity: 0.9;
+}
+
+table.grigliaria ::deep .horzScrollBar {
+    width: 100%;
+    height: 10px;
+    display: flex;
+}
+
+table.grigliaria ::deep .horzScrollBar .scrollBarTrack {
+    height: 10px;
+    position: relative;
+    background-color: var(--glazor-scroll-track-bg);
+}
+
+table.grigliaria ::deep .horzScrollBar .scrollBarHandle {
+    width: 50px;
+    height: 10px;
+    position: absolute;
+    background-color: var(--glazor-scroll-handle-bg);
+    border-radius: 5px;
+    opacity: 0.9;
+}
+
+table.grigliaria ::deep .scrollBarUp,
+table.grigliaria ::deep .scrollBarDown {
+    width: 10px;
+    height: 10px;
+    background-color: var(--glazor-scroll-button-bg);
+    color: var(--glazor-button-fg);
+}
+
+table.grigliaria ::deep .scrollBarUp::before,
+table.grigliaria ::deep .scrollBarDown::before {
+    content: "";
+    display: block;
+    width: 10px;
+    height: 10px;
+    background-color: currentColor;
+    -webkit-mask: var(--icon) center / contain no-repeat;
+    mask: var(--icon) center / contain no-repeat;
+}
+
+table.grigliaria ::deep .vertScrollBar .scrollBarUp {
+    --icon: var(--glazor-icon-scroll-up);
+}
+
+table.grigliaria ::deep .vertScrollBar .scrollBarDown {
+    --icon: var(--glazor-icon-scroll-down);
+}
+
+table.grigliaria ::deep .horzScrollBar .scrollBarUp {
+    --icon: var(--glazor-icon-scroll-left);
+}
+
+table.grigliaria ::deep .horzScrollBar .scrollBarDown {
+    --icon: var(--glazor-icon-scroll-right);
+}
+
+/* the footer buttons: an icon each, drawn by a mask in ::before */
+
+table.grigliaria ::deep button.btnEditRow:disabled,
+table.grigliaria ::deep button.btnInsertRow:disabled,
+table.grigliaria ::deep button.btnRemoveRow:disabled,
+table.grigliaria ::deep button.btnSearchOnCurrentSortedColumn:disabled,
+table.grigliaria ::deep button.btnShowRow:disabled,
+table.grigliaria ::deep button.btnReload:disabled,
+table.grigliaria ::deep button.btnFirstRow:disabled,
+table.grigliaria ::deep button.btnPrevPage:disabled,
+table.grigliaria ::deep button.btnPrevRow:disabled,
+table.grigliaria ::deep button.btnNextRow:disabled,
+table.grigliaria ::deep button.btnNextPage:disabled,
+table.grigliaria ::deep button.btnLastRow:disabled {
+    opacity: .60;
+}
+
+table.grigliaria ::deep button.btnEditRow,
+table.grigliaria ::deep button.btnInsertRow,
+table.grigliaria ::deep button.btnRemoveRow,
+table.grigliaria ::deep button.btnSearchOnCurrentSortedColumn,
+table.grigliaria ::deep button.btnShowRow,
+table.grigliaria ::deep button.btnReload,
+table.grigliaria ::deep button.btnFirstRow,
+table.grigliaria ::deep button.btnPrevPage,
+table.grigliaria ::deep button.btnPrevRow,
+table.grigliaria ::deep button.btnNextRow,
+table.grigliaria ::deep button.btnNextPage,
+table.grigliaria ::deep button.btnLastRow {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid var(--glazor-popup-border);
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--glazor-button-bg);
+    color: var(--glazor-button-fg);
+    cursor: pointer;
+}
+
+table.grigliaria ::deep button.btnEditRow:hover:not(:disabled),
+table.grigliaria ::deep button.btnInsertRow:hover:not(:disabled),
+table.grigliaria ::deep button.btnRemoveRow:hover:not(:disabled),
+table.grigliaria ::deep button.btnSearchOnCurrentSortedColumn:hover:not(:disabled),
+table.grigliaria ::deep button.btnShowRow:hover:not(:disabled),
+table.grigliaria ::deep button.btnReload:hover:not(:disabled),
+table.grigliaria ::deep button.btnFirstRow:hover:not(:disabled),
+table.grigliaria ::deep button.btnPrevPage:hover:not(:disabled),
+table.grigliaria ::deep button.btnPrevRow:hover:not(:disabled),
+table.grigliaria ::deep button.btnNextRow:hover:not(:disabled),
+table.grigliaria ::deep button.btnNextPage:hover:not(:disabled),
+table.grigliaria ::deep button.btnLastRow:hover:not(:disabled) {
+    background-color: var(--glazor-popup-hover-bg);
+}
+
+table.grigliaria ::deep button.btnEditRow::before,
+table.grigliaria ::deep button.btnInsertRow::before,
+table.grigliaria ::deep button.btnRemoveRow::before,
+table.grigliaria ::deep button.btnSearchOnCurrentSortedColumn::before,
+table.grigliaria ::deep button.btnShowRow::before,
+table.grigliaria ::deep button.btnReload::before,
+table.grigliaria ::deep button.btnFirstRow::before,
+table.grigliaria ::deep button.btnPrevPage::before,
+table.grigliaria ::deep button.btnPrevRow::before,
+table.grigliaria ::deep button.btnNextRow::before,
+table.grigliaria ::deep button.btnNextPage::before,
+table.grigliaria ::deep button.btnLastRow::before {
+    content: "";
+    display: block;
+    width: 14px;
+    height: 14px;
+    background-color: currentColor;
+    -webkit-mask: var(--icon) center / contain no-repeat;
+    mask: var(--icon) center / contain no-repeat;
+}
+
+table.grigliaria ::deep button.btnEditRow {
+    --icon: var(--glazor-icon-editing);
+}
+
+table.grigliaria ::deep button.btnInsertRow {
+    --icon: var(--glazor-icon-insert);
+}
+
+table.grigliaria ::deep button.btnRemoveRow {
+    --icon: var(--glazor-icon-remove);
+}
+
+table.grigliaria ::deep button.btnSearchOnCurrentSortedColumn {
+    --icon: var(--glazor-icon-search);
+}
+
+table.grigliaria ::deep button.btnShowRow {
+    --icon: var(--glazor-icon-row);
+}
+
+table.grigliaria ::deep button.btnReload {
+    --icon: var(--glazor-icon-reload);
+}
+
+table.grigliaria ::deep button.btnFirstRow {
+    --icon: var(--glazor-icon-first-row);
+}
+
+table.grigliaria ::deep button.btnPrevPage {
+    --icon: var(--glazor-icon-prev-page);
+}
+
+table.grigliaria ::deep button.btnPrevRow {
+    --icon: var(--glazor-icon-prev-row);
+}
+
+table.grigliaria ::deep button.btnNextRow {
+    --icon: var(--glazor-icon-next-row);
+}
+
+table.grigliaria ::deep button.btnNextPage {
+    --icon: var(--glazor-icon-next-page);
+}
+
+table.grigliaria ::deep button.btnLastRow {
+    --icon: var(--glazor-icon-last-row);
+}
+
+/* the popups and the dialogs the grid opens */
+
+table.grigliaria ::deep .columnPopup {
+    background-color: var(--glazor-popup-bg);
+    color: var(--glazor-fg);
+    min-width: 160px;
+    box-shadow: var(--glazor-popup-shadow);
+    border: 1px solid var(--glazor-popup-border);
+    border-radius: 4px;
+    padding: 6px 0;
+}
+
+table.grigliaria ::deep .columnPopup a {
+    padding: 4px 6px;
+    display: block;
+}
+
+table.grigliaria ::deep .columnPopup hr {
+    margin: 0;
+}
+
+table.grigliaria ::deep .columnPopup a:hover {
+    background-color: var(--glazor-popup-hover-bg);
+}
+
+table.grigliaria ::deep .searchPopup {
+    background-color: var(--glazor-popup-bg);
+    color: var(--glazor-fg);
+    box-shadow: var(--glazor-popup-shadow);
+    border: 1px solid var(--glazor-popup-border);
+    border-radius: 4px;
+}
+
+div.glazor.grigliaria ::deep .filterDefDlg,
+div.glazor.grigliaria ::deep .layoutDefDlg,
+div.glazor.grigliaria ::deep .rowViewDlg {
+    box-shadow: var(--glazor-popup-shadow);
+    border: 1px solid var(--glazor-popup-border);
+    border-radius: 4px;
+}

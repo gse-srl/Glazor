@@ -1,0 +1,104 @@
+﻿@typeparam TGridItem
+
+@using Glazor.Grds.Decs
+@using Glazor.Grds.Filters
+@using Glazor.Grds.Mdls
+@using Glazor.Misc
+
+@{
+    RenderFragment<DecoratorContext<ColumnInfo, string>> descrColFragment = context => { 
+        RenderFragment res = null!;
+        bool filterable = false;
+        if (_filterable != null && _model is IDataGridModel<TGridItem> dgmdl && dgmdl.IsFilterable()) {
+            IColumn orgCol = dgmdl.GetColumn(dgmdl.GetColumnIndex(context.Item.ColumnName));
+            if (orgCol.IsFilterable()) {
+                filterable = true;
+                AFilterDef? fdef = _filterable.GetFilter(context.Item.ColumnName); 
+                res = @<div style="display: flex;">
+                    <Clamper LinesToClamp="@context.Column.GetLinesToClamp()">
+                        @(context.Value?.ToString())
+                    </Clamper>
+                    <div style="flex: 0 0 auto;margin-left: 2px;">
+                        <a href="#" @onclick="@(async () => await _filterable.ShowFilterDialogAsync(context.Item.ColumnName, (_) => StateHasChanged()))" @onclick:preventDefault class="glazor"
+                            title="@Texts.Get(fdef != null ? TextKeys.FilterActive : TextKeys.Filter)" aria-label="@Texts.Get(fdef != null ? TextKeys.FilterActive : TextKeys.Filter)">
+                            <span class="glazor icon filter @(fdef != null ? "accent" : "")" aria-hidden="true"></span>
+                        </a>
+                    </div>
+                </div>;
+            }
+        }
+        if (!filterable) {
+            res = @<Clamper LinesToClamp="@context.Column.GetLinesToClamp()">
+                @(context.Value?.ToString())
+            </Clamper>;
+        }; 
+        return res.RequireNotNull();
+    };
+}
+
+<DialogBox @ref="jsDialog" Class="glazor layoutDefDlg" OnClose="OnCloseAsync" aria-labelledby="@(title != null ? _titleId : null)">
+    <div class="content" style="width: 800px; max-width: 100%;">
+        @if (title != null) {
+            <h3 class="title" id="@_titleId">@title</h3>
+        }
+        <table style="table-layout:fixed;border:0px;" role="presentation">
+            <colgroup>
+                <col width="40%"/>
+                <col width="5%"/>
+                <col width="55%"/>
+            </colgroup>
+            <tr>
+                <th align="center">@Texts.Get(TextKeys.HiddenColumns)</th>
+                <th></th>
+                <th align="center">@Texts.Get(TextKeys.VisibleColumns)</th>
+            </tr>
+            @if (_leftModel != null) {
+                <tr>
+                    <td valign="top">
+                        <MultiSelGrid @ref="leftGridRef" TGridItem="ColumnInfo" Model="_leftModel" SelectionModel="_leftSelectionModel" 
+                            ShowRowNumber="false" ShowDefaultButtons="false" AriaLabel="@Texts.Get(TextKeys.HiddenColumns)"
+                            HeaderHeight="50" OnSelectionChanged="StateHasChanged">
+                            <ChildContent>
+                                <EnrichGridColumn TGridItem="ColumnInfo" VT="string" Name="@nameof(ColumnInfo.ColumnLabel)">
+                                    <DisplayTemplate>
+                                        @descrColFragment(context)
+                                    </DisplayTemplate>
+                                </EnrichGridColumn>
+                            </ChildContent>
+                        </MultiSelGrid>
+                    </td>
+                    <td align="center" valign="middle">
+                        <button type="button" @onclick="async e => await MoveAsync(true, true)" disabled="@(!IsMoveEnabled(true, true))" class="glazor move moveAllFromLeft" title="@Texts.Get(TextKeys.ShowAllColumns)" aria-label="@Texts.Get(TextKeys.ShowAllColumns)"><span class="glazor icon double-right" aria-hidden="true"></span></button>
+                        <button type="button" @onclick="async e => await MoveAsync(true, false)" disabled="@(!IsMoveEnabled(true, false))" class="glazor move moveFromLeft" title="@Texts.Get(TextKeys.ShowSelectedColumns)" aria-label="@Texts.Get(TextKeys.ShowSelectedColumns)"><span class="glazor icon single-right" aria-hidden="true"></span></button>
+                        <div></div>
+                        <button type="button" @onclick="async e => await MoveAsync(false, false)" disabled="@(!IsMoveEnabled(false, false))" class="glazor move moveFromRight" title="@Texts.Get(TextKeys.HideSelectedColumns)" aria-label="@Texts.Get(TextKeys.HideSelectedColumns)"><span class="glazor icon single-left" aria-hidden="true"></span></button>
+                        <button type="button" @onclick="async e => await MoveAsync(false, true)" disabled="@(!IsMoveEnabled(false, true))" class="glazor move moveAllFromRight" title="@Texts.Get(TextKeys.HideAllColumns)" aria-label="@Texts.Get(TextKeys.HideAllColumns)"><span class="glazor icon double-left" aria-hidden="true"></span></button>
+                    </td>
+                    <td valign="top">
+                        <MultiSelGrid @ref="rightGridRef" TGridItem="ColumnInfo" Model="_rightModel" SelectionModel="_rightSelectionModel" 
+                            ShowRowNumber="false" ShowDefaultButtons="false" AriaLabel="@Texts.Get(TextKeys.VisibleColumns)"
+                            HeaderHeight="50" OnSelectionChanged="StateHasChanged" OnRowShift="OnRowShiftAsync">
+                            <ChildContent>
+                                <EnrichGridColumn TGridItem="ColumnInfo" VT="string" Name="@nameof(ColumnInfo.ColumnLabel)">
+                                    <DisplayTemplate>
+                                        @descrColFragment(context)
+                                    </DisplayTemplate>
+                                </EnrichGridColumn>
+                            </ChildContent>
+                        </MultiSelGrid>
+                    </td>
+                </tr>
+            }
+        </table>
+        <span style="height:10px;"></span>
+        <div style="display: flex; justify-content: center;" class="buttons">
+            @* Enter on Cancel is taken there, before the content's Enter runs OK *@
+            <button style="margin-right: 1em;" type="button" @onclick="CancelAsync" class="cancel">@Texts.Get(TextKeys.Cancel)<KeyAction Key="Enter" OnKey="@(evt => CancelAsync())"/></button>
+            <button @ref="okButton" type="button" @onclick="SubmitAsync" class="ok">@Texts.Get(TextKeys.OK)</button>
+        </div>
+        <KeyAction Key="Enter" OnKey="@(evt => SubmitAsync())" BindAncestorWithTag="div"/>
+        @* taken on the dialog, so a host's own Escape around the grid does not see it *@
+        <KeyAction Key="Escape" OnKey="@(evt => CancelAsync())" BindAncestorWithTag="dialog"/>
+    </div>
+</DialogBox>
+

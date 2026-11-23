@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link href="_content/Glazor/glazor.css" rel="stylesheet" />
+    <link id="glazor-dark" href="_content/Glazor/glazor-dark.css" rel="stylesheet" disabled />
+    <link id="glazor-aurora" href="_content/Glazor/glazor-aurora.css" rel="stylesheet" disabled />
+    <link id="glazor-paper" href="_content/Glazor/glazor-paper.css" rel="stylesheet" disabled />
+    <link rel="stylesheet" href="@Assets["Glazor.Demo.styles.css"]" />
+    <link rel="stylesheet" href="demo.css" />
+    @* no prerender: the grids fetch and the spinner shows during the first render, which needs the circuit *@
+    <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+</head>
+
+<body>
+    <AppLoading />
+    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+    <script src="_framework/blazor.web.js"></script>
+    <script>
+        // the theme picker: one theme stylesheet on over glazor.css, and the page's own colours with it
+        window.glazorDemo = {
+            setTheme: theme => {
+                for (const name of ['dark', 'aurora', 'paper'])
+                    document.getElementById('glazor-' + name).disabled = name !== theme;
+                document.body.classList.toggle('dark', theme === 'dark');
+                document.body.classList.toggle('aurora', theme === 'aurora');
+                document.body.classList.toggle('paper', theme === 'paper');
+            }
+        };
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,23 @@
+﻿@namespace Glazor.Grds.Decs
+
+@using Glazor.Grds
+
+@typeparam TGridItem
+
+@code {
+    /// <summary>The cell to draw, as <c>MultiSelCellTemplate</c> receives it.</summary>
+    [Parameter]
+    public MultiSelGrid<TGridItem>.CellTemplateParam Param { get; set; } = null!;
+}
+
+@{
+    IGrigliaria<TGridItem>.CellTemplateParam cellParam = Param.CellParam;
+    string colName = Param.Model.GetColumnName(cellParam.ColIdx);
+    if (colName != MultiSelGrid.SelColName && Param.Grid.CellTemplate != null) {
+        @Param.Grid.CellTemplate(cellParam);
+    }
+    else {
+        // the checkbox column draws through its own DisplayTemplate
+        <DefaultCell Param="@cellParam"/>
+    }
+}

@@ -1,0 +1,62 @@
+﻿@namespace Glazor.Grds.Filters
+
+@using Glazor.Grds.Mdls
+@using Glazor.Misc
+@using Microsoft.AspNetCore.Components.Forms
+
+@inherits AFilterDefRenderer<EnumDef>
+
+<div style="width:500px;">
+    <table>
+    @if (NullableValue) {
+    <tr>
+        <td><label for="@($"{IdPrefix}_include")">@Texts.Get(TextKeys.IncludeNull): </label></td>
+        <td><InputCheckbox id="@($"{IdPrefix}_include")" @bind-Value="FilterDef.IncludeNull"/></td>
+        <td width="50%"></td>
+    </tr>
+    }
+    <tr>
+        <td colspan="3">
+            <MultiSelGrid @ref="gridRef" Model="Model" SelectionModel="SelectionModel">
+            </MultiSelGrid>
+        </td>
+    </tr>
+    </table>
+</div>
+
+@code {
+    private MultiSelGrid<Enum> gridRef = null!;
+
+    private EnumModel? _model;
+    /// <summary>The rows offered, which the dialog lists.</summary>
+    public EnumModel Model { 
+        get => _model.RequireNotNull();
+    }
+
+    private EnumDef? _lastFilterDef;
+
+    private ISelectionModel<Enum>? _selectionModel;
+    /// <summary>The rows chosen.</summary>
+    public ISelectionModel<Enum> SelectionModel { 
+        get => _selectionModel.RequireNotNull();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (!Object.ReferenceEquals(_lastFilterDef, FilterDef))
+        {
+            _lastFilterDef = FilterDef;
+            _model = new EnumModel(FilterDef.EnumType, Texts);
+            _selectionModel = FilterDef.CreateSetSelectionModel();
+        }
+    }
+
+    /// <inheritdoc/>
+    protected internal override async ValueTask ShownAsync()
+    {
+        if (gridRef != null)
+            await gridRef.FocusAsync();
+    }
+}

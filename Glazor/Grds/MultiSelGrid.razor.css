@@ -1,0 +1,45 @@
+﻿/* the same look as the dialogs' buttons in glazor.css */
+div.multiSelGrid ::deep button.btnMoveRowUp,
+div.multiSelGrid ::deep button.btnMoveRowDown {
+    width: 50px;
+    height: 24px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--glazor-popup-border);
+    border-radius: 4px;
+    background-color: var(--glazor-button-bg);
+    color: var(--glazor-button-fg);
+    cursor: pointer;
+}
+
+div.multiSelGrid ::deep button.btnMoveRowUp:hover:not(:disabled),
+div.multiSelGrid ::deep button.btnMoveRowDown:hover:not(:disabled) {
+    background-color: var(--glazor-popup-hover-bg);
+}
+
+div.multiSelGrid ::deep button.btnMoveRowUp:disabled,
+div.multiSelGrid ::deep button.btnMoveRowDown:disabled {
+    opacity: .6;
+    cursor: default;
+}
+
+div.multiSelGrid ::deep button.btnMoveRowUp::before,
+div.multiSelGrid ::deep button.btnMoveRowDown::before {
+    content: "";
+    display: block;
+    width: 14px;
+    height: 14px;
+    background-color: currentColor;
+    -webkit-mask: var(--icon) center / contain no-repeat;
+    mask: var(--icon) center / contain no-repeat;
+}
+
+div.multiSelGrid ::deep button.btnMoveRowUp {
+    --icon: var(--glazor-icon-move-up);
+}
+
+div.multiSelGrid ::deep button.btnMoveRowDown {
+    --icon: var(--glazor-icon-move-down);
+}

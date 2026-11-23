@@ -1,0 +1,21 @@
+﻿@namespace Glazor.Grds.Decs
+
+@using Glazor.Misc
+
+@typeparam TGridItem
+
+@code {
+
+    /// <summary>The filler row to draw, as <c>EmptyRowCellTemplate</c> receives it.</summary>
+    [Parameter]
+    public IGrid<TGridItem>.EmptyRowTemplateParam Param { get; set; } = null!;
+}
+
+<td style="@(Param.Grid.RowHeight == null ? "" : $"height:{Param.Grid.RowHeight}px")" >
+    &nbsp;
+    @if (Param.Grid.RowsPopupEnabled) {
+        <MouseAction Type="MouseAction.MouseType.ContextMenu" BindAncestorWithTag="tr"
+            OnMouse="@(async (evt) => await Param.Grid.OnRowPopup.InvokeAsync(new(null, evt.ClientX, evt.ClientY)))"
+            Enabled="@(Param.Grid.RowsPopupEnabled)"/>
+    }
+</td>

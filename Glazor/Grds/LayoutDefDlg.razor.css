@@ -1,0 +1,7 @@
+﻿/* the move buttons' place between the two lists; their size and look are in glazor.css */
+div.content ::deep button.move {
+    margin: 0 4px;
+}
+div.content ::deep button.moveFromRight {
+    margin-top: 5px;
+}

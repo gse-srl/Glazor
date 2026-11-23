@@ -1,0 +1,83 @@
+﻿@typeparam TGridItem
+
+@using Glazor.Grds.Decs
+@using Glazor.Grds.Mdls
+@using Glazor.Misc
+
+@{
+    RenderFragment<IGrigliaria<TGridItem>.CellTemplateParam> cellTemplateAdapter = context => {
+        CheckTreeColumn();
+        Treegliaria<TGridItem>.CellTemplateParam tp = new(this, GetWrappedModel(), context);
+        if (TreeCellTemplate != null) {
+            return @TreeCellTemplate(tp);
+        }
+        else {
+            return @<DefaultTreeCell Param="tp"/>;
+        }
+    };
+}
+
+<div class="glazor treegliaria" style="display:contents;">
+<Grigliaria @ref="_dataGrid" Model="GetWrappedModel()"
+        ShowRowNumber="@ShowRowNumber" HeaderHeight="@HeaderHeight" RowHeight="@RowHeight" OnModelChanged="ModelChanged"
+        PageSize="@PageSize" ShowNavigationButtons="@ShowNavigationButtons" ShowHeader="@ShowHeader" ShowColumnGroups="@ShowColumnGroups"
+        RowsPopupEnabled="@RowsPopupEnabled" OnRowPopup="@OnRowPopup" ColumnsPopupEnabled="@ColumnsPopupEnabled"
+        VertResizer="@VertResizer" ShowDefaultButtons="@ShowDefaultButtons"
+        HCellTemplate="@HCellTemplate" GHCellTemplate="@GHCellTemplate" EmptyRowCellTemplate="@EmptyRowCellTemplate"
+        CellCursorEnabled="@CellCursorEnabled" RowDialogEnabled="@RowDialogEnabled" ReloadEnabled="@ReloadEnabled" GotoLastKnown="@GotoLastKnown" TouchScrollerEnabled="@TouchScrollerEnabled"
+        HorzResizer="@HorzResizer" Layoutable="@Layoutable" FilterDefFactory="@FilterDefFactory"
+        RowHeadingTemplate="@RowHeadingTemplate" CellTemplate="@cellTemplateAdapter"
+        OnDblClick="DblClickAsync" OnLayoutChanged="LayoutChanged" OnStableItemChanged="OnStableItemChanged" OnTimeout="OnTimeout" ShouldReRenderTrick="@ShouldReRenderTrick" AriaLabel="@AriaLabel"
+        Spinner="Spinner"
+        >
+    <ChildContent>
+        @if (ShowZoomBar && Model is IFolderGridModel<TGridItem> zoomed && zoomed.IsFolderModel())
+        {
+            IReadOnlyList<TGridItem> zoomPath = zoomed.GetZoomPath();
+            bool frozen = Model.IsCurrentRowFrozen();
+            <nav class="glazor zoombar" aria-label="@Texts.Get(TextKeys.Zoom)">
+                <button type="button" class="btnZoomIn" title="@Texts.Get(TextKeys.ZoomIn)" aria-label="@Texts.Get(TextKeys.ZoomIn)"
+                        @onclick="async () => await zoomed.ZoomInAsync()" disabled="@(frozen || !zoomed.CanZoomIn())"></button>
+                <button type="button" class="btnZoomOut" title="@Texts.Get(TextKeys.ZoomOut)" aria-label="@Texts.Get(TextKeys.ZoomOut)"
+                        @onclick="async () => await zoomed.ZoomOutAsync(1)" disabled="@(frozen || zoomPath.Count == 0)"></button>
+                <button type="button" class="btnZoomOutAll" title="@Texts.Get(TextKeys.ZoomOutAll)" aria-label="@Texts.Get(TextKeys.ZoomOutAll)"
+                        @onclick="async () => await zoomed.ZoomOutAsync(0)" disabled="@(frozen || zoomPath.Count == 0)"></button>
+                @for (int i = 0; i < zoomPath.Count; i++)
+                {
+                    int levels = zoomPath.Count - 1 - i;
+                    string label = ZoomLabelOf(zoomPath[i]);
+                    if (i > 0)
+                    {
+                        <span class="sep" aria-hidden="true">›</span>
+                    }
+                    if (levels > 0)
+                    {
+                        <Anchor OnClick="async _ => await zoomed.ZoomOutAsync(levels)" Title="@Texts.Get(TextKeys.ZoomOut)" Disabled="@frozen">
+                            @label
+                        </Anchor>
+                    }
+                    else
+                    {
+                        <span aria-current="location">@label</span>
+                    }
+                }
+            </nav>
+        }
+        @ChildContent
+        <KeyAction CtrlKey=true Key=" " OnKey="@(async evt => await ToggleCurrentExpandAsync())" BindAncestorWithTag="div"
+            Enabled="@(!Model.IsCurrentRowFrozen())"/>
+        @if (Model is IFolderGridModel<TGridItem> folders && folders.IsFolderModel())
+        {
+            <KeyAction CtrlKey=true ShiftKey=true Key="ArrowDown" OnKey="@(async evt => await OnCurrentAsync(folders.ExpandAllAsync))" BindAncestorWithTag="div"
+                Enabled="@(!Model.IsCurrentRowFrozen())"/>
+            <KeyAction CtrlKey=true ShiftKey=true Key="ArrowUp" OnKey="@(async evt => await OnCurrentAsync(folders.CollapseAllAsync))" BindAncestorWithTag="div"
+                Enabled="@(!Model.IsCurrentRowFrozen())"/>
+            <KeyAction CtrlKey=true ShiftKey=true Key="ArrowRight" OnKey="@(async evt => await folders.ZoomInAsync())" BindAncestorWithTag="div"
+                Enabled="@(!Model.IsCurrentRowFrozen())"/>
+            <KeyAction CtrlKey=true ShiftKey=true Key="ArrowLeft" OnKey="@(async evt => await folders.ZoomOutAsync(1))" BindAncestorWithTag="div"
+                Enabled="@(!Model.IsCurrentRowFrozen())"/>
+        }
+    </ChildContent>
+</Grigliaria>
+</div>
+

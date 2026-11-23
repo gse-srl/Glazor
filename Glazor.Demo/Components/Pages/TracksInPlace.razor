@@ -1,0 +1,64 @@
+﻿@page "/tracks-in-place"
+
+<PageTitle>Glazor demo - In-place edit grid</PageTitle>
+<h1>Grigliaria editing a paged EditableEFDataGridModel in place</h1>
+<p>The tracks of the Editable paged EF grid page, edited in the grid itself. F2 or a double-click edits the current row,
+    Ctrl+Ins inserts a track before it, Ctrl+Del removes it; Enter or the check on the row heading saves the row to the
+    database, Esc or the cross cancels. The buttons below the grid do the same. A field that breaks a rule shows its message in
+    its upper left corner, and the row is not saved until it is right.</p>
+<p>
+    <label>
+        Edit mode
+        <select @bind="_mode">
+            <option value="@EditMode.Manual">Manual: F2, a double-click or Edit</option>
+            <option value="@EditMode.OnClick">OnClick: a click edits the row</option>
+            <option value="@EditMode.OnMove">OnMove: the arrows edit the row they reach</option>
+        </select>
+    </label>
+</p>
+
+<Grigliaria TGridItem="TrackRow" Model="_model" Spinner="@Gui.Spinner" EditMode="_mode"
+            NewItem="NewTrack" OnPost="SaveAsync" OnRemove="RemoveAsync"
+            Layoutable="true" RowHeight="32" HeaderHeight="40" RowDialogEnabled="true" ReloadEnabled="true"
+            VertResizer="@(GridVertResizers.RowHeight("flex: 1 1 0; min-height: 12rem;", 4, 60))"
+            HorzResizer="@(GridHorzResizers.DispUnitWidth(50, 150, 12))">
+    <GridColumn EFProperty="@(x => x.TrackId)" Name="TrackId" Label="Id" Fixed="true" Editable="false" PreferredSize="6" Alignment="Alignment.Right" />
+    <GridColumn EFProperty="@(x => x.Name)" Name="Name" Label="Track" PreferredSize="28" />
+    <GridColumn EFProperty="@(x => x.Artist)" Name="Artist" Label="Artist" PreferredSize="20" />
+    <GridColumn EFProperty="@(x => x.Album)" Name="Album" Label="Album" PreferredSize="24">
+        <EditTemplate>
+            <InputSelect class="glazor editor-input" @bind-Value="context.Item.AlbumId">
+                <option value="">(none)</option>
+                @foreach (Choice album in _albums)
+                {
+                    <option value="@album.Id">@album.Name</option>
+                }
+            </InputSelect>
+        </EditTemplate>
+    </GridColumn>
+    <GridColumn EFProperty="@(x => x.Genre)" Name="Genre" Label="Genre" PreferredSize="12" FilterDef="_genreFDef">
+        <EditTemplate>
+            <InputSelect class="glazor editor-input" @bind-Value="context.Item.GenreId">
+                <option value="">(none)</option>
+                @foreach (Choice genre in _genres)
+                {
+                    <option value="@genre.Id">@genre.Name</option>
+                }
+            </InputSelect>
+        </EditTemplate>
+    </GridColumn>
+    <GridColumn EFProperty="@(x => x.MediaType)" Name="MediaType" Label="Media" PreferredSize="18" FilterDef="_mediaTypeFDef">
+        <EditTemplate>
+            <InputSelect class="glazor editor-input" @bind-Value="context.Item.MediaTypeId">
+                @foreach (Choice mediaType in _mediaTypes)
+                {
+                    <option value="@mediaType.Id">@mediaType.Name</option>
+                }
+            </InputSelect>
+        </EditTemplate>
+    </GridColumn>
+    <GridColumn EFProperty="@(x => x.Composer)" Name="Composer" Label="Composer" PreferredSize="24" />
+    <GridColumn EFProperty="@(x => x.Milliseconds)" Name="Milliseconds" Label="Length (ms)" PreferredSize="10" Alignment="Alignment.Right" />
+    <GridColumn EFProperty="@(x => x.Bytes)" Name="Bytes" Label="Bytes" PreferredSize="10" Alignment="Alignment.Right" />
+    <GridColumn EFProperty="@(x => x.UnitPrice)" Name="UnitPrice" Label="Price" PreferredSize="7" Alignment="Alignment.Right" />
+</Grigliaria>

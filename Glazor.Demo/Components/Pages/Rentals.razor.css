@@ -1,0 +1,36 @@
+﻿/* the personalized cells: a class put on the td by CellClassFn, reached through the grid with ::deep */
+.rentals ::deep td.unpaid {
+    color: #b00020;
+    font-style: italic;
+}
+
+.rentals ::deep td.big {
+    font-weight: 600;
+}
+
+.rentals ::deep td.adult {
+    color: #b00020;
+    font-weight: 600;
+}
+
+body.dark .rentals ::deep td.unpaid,
+body.dark .rentals ::deep td.adult {
+    color: #ff8a80;
+}
+
+.rentals ::deep .badge.out {
+    display: inline-block;
+    padding: 0 6px;
+    border-radius: 8px;
+    background-color: #ffe0b2;
+    color: #7a3e00;
+    font-size: 0.85em;
+}
+
+.rentals ::deep button.link {
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: inherit;
+    padding: 0;
+}

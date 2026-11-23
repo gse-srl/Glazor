@@ -1,0 +1,31 @@
+﻿/* the personalized cells: a class put on the td by CellClassFn, reached through the grid with ::deep */
+.demo-grid ::deep td.pricey {
+    color: #b00020;
+    font-weight: 600;
+}
+
+body.dark .demo-grid ::deep td.pricey {
+    color: #ff8a80;
+}
+
+.demo-grid ::deep .badge {
+    display: inline-block;
+    padding: 0 8px;
+    border-radius: 8px;
+    font-size: 0.85em;
+}
+
+.demo-grid ::deep .badge.on {
+    background-color: #c8e6c9;
+    color: #1b5e20;
+}
+
+.demo-grid ::deep .badge.off {
+    background-color: #e0e0e0;
+    color: #424242;
+}
+
+.demo-grid ::deep .stars {
+    color: #e8a000;
+    letter-spacing: 1px;
+}

@@ -1,0 +1,133 @@
+﻿@page "/tracks"
+
+<PageTitle>Glazor demo - Editable paged EF grid</PageTitle>
+<h1>Grigliaria over a paged EditableEFDataGridModel</h1>
+<p>The 3,503 tracks of the Chinook sample database, in SQLite. The grid reads a window of rows at a time, the spinner
+    covers each query, and every filter and sort is SQL over the whole table: the columns are <code>EFProperty</code>
+    ones over a row projected in the query. Page past what was read, sort by Artist, filter the genre.</p>
+<p>The Genre, Media and Price filters are <code>EFDistinctDef</code>s: each lists the values its column has in the grid's
+    query, read when the dialog opens. Price is a number, which the other set filters do not take.</p>
+<p>Edit a track with the pen or a double-click, or add one after the current row: the panel below saves it to the database,
+    and the grid reads the row back. A row the filter no longer admits stays shown until the next query, and one whose
+    sorted value changed moves to its new place. Every run starts from the sample data.</p>
+
+<Grigliaria TGridItem="TrackRow" Model="_model" Spinner="@Gui.Spinner"
+            Layoutable="true" RowHeight="32" HeaderHeight="40" RowDialogEnabled="true" ReloadEnabled="true"
+            VertResizer="@(GridVertResizers.RowHeight("height: 40vh;", 4, 20))"
+            HorzResizer="@(GridHorzResizers.DispUnitWidth(50, 150, 12))"
+            OnDblClick="@(e => StartEditAsync(e.RowIdx))" OnStableItemChanged="@ShowAsync">
+    <GridColumn Property="@(x => x.TrackId)" Name="Edit" Label="" Fixed="true" Sortable="false" Filterable="false"
+                PreferredSize="4" Alignment="Alignment.Center">
+        <DisplayTemplate>
+            <button type="button" class="link" title="Edit the track" aria-label="Edit the track" disabled="@Editing"
+                    @onclick="() => StartEditAsync(context.RowIdx)"><span class="demo-icon edit" aria-hidden="true"></span></button>
+        </DisplayTemplate>
+    </GridColumn>
+    <GridColumn EFProperty="@(x => x.TrackId)" Name="TrackId" Label="Id" Fixed="true" PreferredSize="6" Alignment="Alignment.Right" />
+    <GridColumn EFProperty="@(x => x.Name)" Name="Name" Label="Track" PreferredSize="28" />
+    <GridColumn EFProperty="@(x => x.Artist)" Name="Artist" Label="Artist" PreferredSize="20" />
+    <GridColumn EFProperty="@(x => x.Album)" Name="Album" Label="Album" PreferredSize="24" />
+    <GridColumn EFProperty="@(x => x.Genre)" Name="Genre" Label="Genre" PreferredSize="12" FilterDef="_genreFDef" />
+    <GridColumn EFProperty="@(x => x.MediaType)" Name="MediaType" Label="Media" PreferredSize="18" FilterDef="_mediaTypeFDef" />
+    <GridColumn EFProperty="@(x => x.Composer)" Name="Composer" Label="Composer" PreferredSize="24" />
+    <GridColumn EFProperty="@(x => x.Milliseconds)" Name="Milliseconds" Label="Length (ms)" PreferredSize="10" Alignment="Alignment.Right" />
+    <GridColumn EFProperty="@(x => x.Bytes)" Name="Bytes" Label="Bytes" PreferredSize="10" Alignment="Alignment.Right" />
+    <GridColumn EFProperty="@(x => x.UnitPrice)" Name="UnitPrice" Label="Price" PreferredSize="7" Alignment="Alignment.Right" FilterDef="_priceFDef" />
+</Grigliaria>
+
+<div class="track-panel @(Inserting ? "is-new" : Editing ? "is-editing" : "is-viewing")">
+    <EditForm EditContext="_editContext" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+        <header>
+            <div class="cover" aria-hidden="true"><span class="demo-icon music"></span></div>
+            <div class="title">
+                <span class="eyebrow">
+                    @(Inserting ? "New track" : _row.TrackId > 0 ? $"Track #{_row.TrackId}" : "No track")
+                    <span class="badge">@(Inserting ? "New" : Editing ? "Editing" : "Viewing")</span>
+                </span>
+                <h2>@(string.IsNullOrWhiteSpace(_row.Name) ? "Untitled" : _row.Name)</h2>
+            </div>
+            @if (!Editing)
+            {
+                <span class="tip">Double-click a row, or use its pen, to edit it.</span>
+            }
+            <div class="actions">
+                <button type="button" class="secondary" @onclick="NewAsync" disabled="@Editing"><span class="demo-icon add" aria-hidden="true"></span> New track</button>
+                <button type="button" class="ghost" @onclick="CancelAsync" disabled="@(!Editing)">Cancel</button>
+                <button type="submit" class="primary" disabled="@(!Editing)"><span class="demo-icon save" aria-hidden="true"></span> Save</button>
+            </div>
+        </header>
+
+        <fieldset class="fields" disabled="@(!Editing)">
+            <div class="field f-name">
+                <label for="track-name">Track</label>
+                <div class="control">
+                    <InputText id="track-name" @bind-Value="_row.Name" @ref="_nameInput" />
+                    <PopupValidationMessage For="@(() => _row.Name)" ShowWhenMouseOver="true" />
+                </div>
+            </div>
+
+            <div class="field f-album">
+                <label for="track-album">Album</label>
+                <InputSelect id="track-album" @bind-Value="_row.AlbumId">
+                    <option value="">(none)</option>
+                    @foreach (Choice album in _albums)
+                    {
+                        <option value="@album.Id">@album.Name</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="field f-genre">
+                <label for="track-genre">Genre</label>
+                <InputSelect id="track-genre" @bind-Value="_row.GenreId">
+                    <option value="">(none)</option>
+                    @foreach (Choice genre in _genres)
+                    {
+                        <option value="@genre.Id">@genre.Name</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="field f-media">
+                <label for="track-media">Media</label>
+                <InputSelect id="track-media" @bind-Value="_row.MediaTypeId">
+                    @foreach (Choice mediaType in _mediaTypes)
+                    {
+                        <option value="@mediaType.Id">@mediaType.Name</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="field f-composer">
+                <label for="track-composer">Composer</label>
+                <InputText id="track-composer" @bind-Value="_row.Composer" />
+            </div>
+
+            <div class="field f-length">
+                <label for="track-length">Length <small>ms · @TimeSpan.FromMilliseconds(Math.Max(0, _row.Milliseconds)).ToString(@"m\:ss")</small></label>
+                <div class="control">
+                    <InputNumber id="track-length" @bind-Value="_row.Milliseconds" />
+                    <PopupValidationMessage For="@(() => _row.Milliseconds)" ShowWhenMouseOver="true" />
+                </div>
+            </div>
+
+            <div class="field f-bytes">
+                <label for="track-bytes">Size <small>bytes@(_row.Bytes is int bytes ? $" · {bytes / 1048576.0:0.0} MB" : "")</small></label>
+                <div class="control">
+                    <InputNumber id="track-bytes" @bind-Value="_row.Bytes" />
+                    <PopupValidationMessage For="@(() => _row.Bytes)" ShowWhenMouseOver="true" />
+                </div>
+            </div>
+
+            <div class="field f-price">
+                <label for="track-price">Price</label>
+                <div class="control">
+                    <InputNumber id="track-price" @bind-Value="_row.UnitPrice" />
+                    <PopupValidationMessage For="@(() => _row.UnitPrice)" ShowWhenMouseOver="true" />
+                </div>
+            </div>
+        </fieldset>
+    </EditForm>
+    <KeyAction Key="Escape" OnKey="@(async _ => await CancelAsync())" BindAncestorWithTag="div" Enabled="@Editing" />
+</div>

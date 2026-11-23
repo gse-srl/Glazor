@@ -1,0 +1,23 @@
+﻿@namespace Glazor.Grds.Decs
+
+@using Glazor.Misc
+
+@typeparam TGridItem
+
+@inject IServiceProvider Services
+
+@* A stop of the edited row on an edge of the column window, out of sight: Tab or Shift+Tab from the column on the edge shows
+   the column beyond. Its focusin stays here, so the cell around it does not take it for a field. *@
+<span class="glazor edit-edge" tabindex="0" aria-label="@Texts.Get(Step < 0 ? TextKeys.ColumnLeft : TextKeys.ColumnRight)"
+      @onfocus="@(() => Grid.EditEdgeFocused(Step))" @onfocusin:stopPropagation="true"></span>
+
+@code {
+    private IGlazorTexts? _texts;
+    private IGlazorTexts Texts => _texts ??= GlazorTexts.Resolve(Services);
+
+    /// <summary>The grid editing the row.</summary>
+    [Parameter] public Grigliaria<TGridItem> Grid { get; set; } = null!;
+
+    /// <summary>-1 on the left edge, 1 on the right one.</summary>
+    [Parameter] public int Step { get; set; }
+}

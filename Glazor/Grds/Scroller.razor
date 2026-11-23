@@ -1,0 +1,168 @@
+﻿@using Glazor.Misc
+
+@namespace Glazor.Grds
+
+@inject IJSRuntime JS
+@inject ILogger<Scroller> Logger
+@implements IAsyncDisposable 
+
+@if (Orientation == OrientationType.Horizontal)
+{
+    <div @ref="scrollBarRef" class="horzScrollBar" aria-hidden="true">
+        <div class="scrollBarUp"></div>
+        <div class="scrollBarTrack">
+            <div class="scrollBarHandle"></div>
+        </div>
+        <div class="scrollBarDown"></div>
+    </div>
+}
+else
+{
+    <div @ref="scrollBarRef" class="vertScrollBar" aria-hidden="true">
+        <div class="scrollBarUp"></div>
+        <div class="scrollBarTrack">
+            <div class="scrollBarHandle"></div>
+        </div>
+        <div class="scrollBarDown"></div>
+    </div>
+}
+
+@code {
+    /// <summary>Which way the bar scrolls.</summary>
+    public enum OrientationType
+    {
+        /// <summary>Top to bottom.</summary>
+        Vertical,
+        /// <summary>Left to right.</summary>
+        Horizontal
+    }
+
+    /// <summary>Required. Raised with the first index to show, between 0 and <see cref="RowCount"/> minus <see cref="PageSize"/>.</summary>
+    [Parameter, EditorRequired]
+    public EventCallback<int> OnScrollTo { get; set; }
+
+    /// <summary>Required. How many there are.</summary>
+    [Parameter, EditorRequired]
+    public int RowCount { get; set; }
+    /// <summary>Required. How many are shown at once.</summary>
+    [Parameter, EditorRequired]
+    public int PageSize { get; set; }
+    /// <summary>Required. The first index shown.</summary>
+    [Parameter, EditorRequired]
+    public int PageIdx { get; set; }
+
+    /// <summary>Turns the bar off without unmounting it.</summary>
+    [Parameter]
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>Vertical or horizontal.</summary>
+    [Parameter]
+    public OrientationType Orientation { get; set; } = OrientationType.Vertical;
+
+    /// <summary>
+    /// Sort of ... so the child component is drawn whenever the size "changes".
+    /// trick https://stackoverflow.com/questions/67447396/blazor-statehaschanged-not-updating-child-components
+    /// </summary>
+    [Parameter]
+    public double SizeTrick { get; set; }
+
+    private ElementReference scrollBarRef { get; set; }
+
+    private IJSObjectReference? module;
+    // https://learn.microsoft.com/en-us/aspnet/core/blazor/javascript-interoperability/call-dotnet-from-javascript?view=aspnetcore-10.0
+    private DotNetObjectReference<Scroller>? dotNetObjRef;
+
+    /// <inheritdoc/>
+    protected override void OnInitialized()
+    {
+        dotNetObjRef = DotNetObjectReference.Create(this);
+    }
+
+    /// <inheritdoc/>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && module == null)
+        {
+            // https://learn.microsoft.com/en-us/aspnet/core/blazor/components/class-libraries?view=aspnetcore-10.0&tabs=visual-studio
+            IJSObjectReference imported = await JS.InvokeAsync<IJSObjectReference>("import",
+                "./_content/Glazor/Grds/Scroller.razor.js");
+            if (_disposed)
+            {
+                await imported.DisposeAsync();   // disposed while the import was in flight
+                return;
+            }
+            module = imported;
+        }
+        // It's not enough on firstRender and sometimes firstRender and !firstRender are executed "together"
+        if (module != null && !string.IsNullOrEmpty(scrollBarRef.Id)) {
+            // must be execute every time to update the scrollbar
+            try {
+                await module.RequireNotNull().InvokeVoidAsync("registerScrollerCallback", scrollBarRef, dotNetObjRef.RequireNotNull(), 
+                        nameof(ProcessScrollTo), RowCount, PageSize, PageIdx, Enabled, Orientation != OrientationType.Horizontal);
+            }
+            catch (JSException e) {
+                Logger.LogError(e, $"Scroller not registered");
+            }
+            catch (ObjectDisposedException e) {
+                if (Logger.IsEnabled(LogLevel.Trace))
+                    Logger.LogTrace("As far as I know this can be safely ignored: {msg}", e.Message);
+            }
+        }
+    }
+
+    private async ValueTask CleanupAsync()
+    {
+        if (!string.IsNullOrEmpty(scrollBarRef.Id))
+        {
+            await module!.InvokeVoidAsync("cleanup", scrollBarRef);
+        }
+    }
+
+    private bool _disposed;
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        _disposed = true;
+        if (module != null)
+        {
+            try
+            {
+                try
+                {
+                    await CleanupAsync();
+                }
+                finally
+                {
+                    await module.DisposeAsync();
+                }
+            }
+            catch (Exception ex) when (ex is JSDisconnectedException or TaskCanceledException)
+            {
+                // Ignore
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error while disposing Scroller");
+            }
+            module = null;
+        }
+        dotNetObjRef?.Dispose();
+        scrollBarRef = default;
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Called by the JS side when the bar is moved.</summary>
+    [JSInvokable, System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]   // for the JS side, not for hosts
+    public async Task ProcessScrollTo(int idx)
+    {
+        try
+        {
+            // Any script on the page can call this: keep to the range the bar was rendered with
+            await OnScrollTo.InvokeAsync(Math.Clamp(idx, 0, Math.Max(0, RowCount - PageSize)));
+        }
+        catch (Exception ex) when (!_disposed)
+        {
+            await DispatchExceptionAsync(ex);
+        }
+    }
+}

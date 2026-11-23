@@ -1,0 +1,52 @@
+﻿@page "/"
+@using Glazor.Grds.Mdls
+
+<PageTitle>Glazor demo - Grigliaria</PageTitle>
+<h1>Grigliaria</h1>
+<p>Five hundred in-memory rows and eighteen columns, more than fit: the horizontal scrollbar and the column buttons move
+    the window. Click a header to sort, the funnel to filter, the icon in the corner for the layout dialog; walk the rows
+    with the keys, type to search on the sorted column. Three columns are personalized: Active is a badge, Rating is stars,
+    an expensive Price gets a class, all from the column's template or <code>CellClassFn</code>; three groups share a header.</p>
+
+<div class="demo-grid fill">
+<Grigliaria TGridItem="Product" Model="_model" Spinner="@Gui.Spinner"
+            Layoutable="true" ShowColumnGroups="true" RowHeight="32" HeaderHeight="40" RowDialogEnabled="true"
+            VertResizer="@(GridVertResizers.RowHeight("flex: 1 1 0; min-height: 12rem;", 4, 60))"
+            HorzResizer="@(GridHorzResizers.DispUnitWidth(50, 150, 12))">
+    <GridColumn Property="@(x => x.Code)" Name="Code" Label="Code" Fixed="true" PreferredSize="8" ShownInRowDialog="true" />
+    <GridColumn Property="@(x => x.Name)" Name="Name" Label="Name" PreferredSize="24" />
+    <GridColumn Property="@(x => x.Category)" Name="Category" Label="Category" PreferredSize="10" />
+    <GridColumn Property="@(x => x.Price)" Name="Price" Label="Price" PreferredSize="8" Alignment="Alignment.Right"
+                CellClassFn="@(ctx => ctx.Value > 150 ? "pricey" : null)" />
+    <GridColumn Property="@(x => x.Active)" Name="Active" Label="Active" PreferredSize="7" Alignment="Alignment.Center">
+        <DisplayTemplate>
+            <span class="badge @(context.Value ? "on" : "off")">@(context.Value ? "yes" : "no")</span>
+        </DisplayTemplate>
+    </GridColumn>
+    <GridColumn Property="@(x => x.Rating)" Name="Rating" Label="Rating" PreferredSize="8" Alignment="Alignment.Center">
+        <DisplayTemplate>
+            <span class="stars" role="img" title="@($"{context.Value} of 5")" aria-label="@($"{context.Value} of 5")">@(new string('\u2605', context.Value))@(new string('\u2606', 5 - context.Value))</span>
+        </DisplayTemplate>
+    </GridColumn>
+    <GridColumn Property="@(x => x.Updated)" Name="Updated" Label="Updated" PreferredSize="14" />
+    <GridColumn Property="@(x => x.Notes)" Name="Notes" Label="Notes" PreferredSize="30" />
+    <GridColumn Property="@(x => x.Stock)" Name="Stock" Label="Stock" PreferredSize="8" Alignment="Alignment.Right" GroupId="Stock" />
+    <GridColumn Property="@(x => x.Warehouse)" Name="Warehouse" Label="Warehouse" PreferredSize="10" GroupId="Stock" />
+    <GridColumn Property="@(x => x.Discontinued)" Name="Discontinued" Label="Discontinued" PreferredSize="11" GroupId="Stock" />
+    <GridColumn Property="@(x => x.Sku)" Name="Sku" Label="SKU" PreferredSize="14" GroupId="Identity" />
+    <GridColumn Property="@(x => x.Barcode)" Name="Barcode" Label="Barcode" PreferredSize="14" GroupId="Identity" />
+    <GridColumn Property="@(x => x.Supplier)" Name="Supplier" Label="Supplier" PreferredSize="12" />
+    <GridColumn Property="@(x => x.Weight)" Name="Weight" Label="Weight (kg)" PreferredSize="10" Alignment="Alignment.Right" GroupId="Look" />
+    <GridColumn Property="@(x => x.Color)" Name="Color" Label="Colour" PreferredSize="8" GroupId="Look" />
+    <GridColumn Property="@(x => x.Size)" Name="Size" Label="Size" PreferredSize="6" GroupId="Look" />
+    <GridColumn Property="@(x => x.Created)" Name="Created" Label="Created" PreferredSize="11" />
+</Grigliaria>
+</div>
+
+@code {
+    [CascadingParameter] public GuiHelper Gui { get; set; } = null!;
+
+    private readonly DataGridModel<Product> _model = new() { ItemKeyFn = p => p.Id };
+
+    protected override void OnInitialized() => _model.GetData().Set(SampleData.Products(500));
+}

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "demo",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "Glazor.Demo", "-c", "Release", "--no-build", "--urls", "http://localhost:5177"],
+      "port": 5177
+    },
+    {
+      "name": "demo-debug",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "Glazor.Demo", "-c", "Debug", "--no-build", "--urls", "http://localhost:5178"],
+      "port": 5178
+    }
+  ]
+}

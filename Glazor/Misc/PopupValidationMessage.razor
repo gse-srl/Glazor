@@ -1,0 +1,50 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+
+@typeparam TValue
+
+@if (!IsValid())
+{
+    @* A focusable control, so the keyboard reaches the message too: Tab lands on the icon, Space or Enter opens the popup, Esc closes it *@
+    if (ShowWhenMouseOver)
+    {
+        <i style="anchor-name: @($"{_anchor}; {Style}")" role="button" tabindex="0" aria-label="@Texts.Get(TextKeys.ShowValidationError)"
+            class="glazor message-icon @(Class)" onclick="@ShowPopupAsync" onmouseover="@ShowPopupAsync" >
+            <KeyAction Key=" " OnKey="@TogglePopupAsync" />
+            <KeyAction Key="Enter" OnKey="@TogglePopupAsync" />
+        </i>
+    }
+    else
+    {
+        <i style="anchor-name: @($"{_anchor}; {Style}")" role="button" tabindex="0" aria-label="@Texts.Get(TextKeys.ShowValidationError)"
+           class="glazor message-icon @(Class)" onclick="@ShowPopupAsync" >
+            <KeyAction Key=" " OnKey="@TogglePopupAsync" />
+            <KeyAction Key="Enter" OnKey="@TogglePopupAsync" />
+        </i>
+    }
+    <Popup Open="false" @ref="_popupRef" Class="message-popup" Style="@($"position: fixed; position-anchor: {_anchor}; position-area: bottom span-right;")">
+        <ValidationMessage For="@For" AdditionalAttributes="@AdditionalAttributes" />
+        @* taken on the popup, so an Escape around it, the grid's cancel of the row being edited for one, does not see it *@
+        <KeyAction Key="Escape" OnKey="@(async evt => await _popupRef.RequireNotNull().CloseAsync())" BindAncestorWithTag="dialog"/>
+    </Popup>
+}
+else if (_popupRef != null)
+{
+    // Just to ensure that the popup is closed when the validation message disappears
+    var pref = _popupRef;
+    _popupRef = null;
+    if (pref != null)
+    {
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                await pref.CloseAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error closing popup");
+            }
+        });
+    }
+}
+

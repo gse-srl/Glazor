@@ -1,0 +1,90 @@
+﻿@namespace Glazor.Grds.Filters
+
+@using System.Numerics
+@using Microsoft.AspNetCore.Components.Forms
+
+@typeparam VT where VT : struct, INumber<VT>
+@inherits AFilterDefRenderer<NumberDef<VT>>
+@implements IDisposable
+
+<EditForm EditContext="_editContext">
+    <table>
+    @if (NullableValue) {
+    <tr>
+        <td><label for="@($"{IdPrefix}_include")">@Texts.Get(TextKeys.IncludeNull): </label></td>
+        <td><InputCheckbox id="@($"{IdPrefix}_include")" @bind-Value="FilterDef.IncludeNull"/></td>
+    </tr>
+    }
+    <tr>
+        <td><label for="@($"{IdPrefix}_from")">@Texts.Get(TextKeys.From): </label></td>
+        <td><InputNumber id="@($"{IdPrefix}_from")" @ref="fromRef" TValue="VT?" @bind-Value="FilterDef.From" style="text-align: right"/></td>
+    </tr>
+    <tr>
+        <td><label for="@($"{IdPrefix}_to")">@Texts.Get(TextKeys.To): </label></td>
+        <td><InputNumber id="@($"{IdPrefix}_to")" TValue="VT?" @bind-Value="FilterDef.To" style="text-align: right"/></td>
+    </tr>
+    <tr> @* Just one message, it should be the same for both *@
+        <td>&nbsp;</td>
+        <td><ValidationMessage For="() => FilterDef.From" /></td>
+    </tr>
+    </table>
+</EditForm>
+
+@code {
+    private InputNumber<VT?>? fromRef;
+
+    private EditContext _editContext = null!;
+    private ValidationMessageStore _messageStore = null!;
+
+    private NumberDef<VT>? _lastFilterDef;
+
+    /// <inheritdoc/>
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (!Object.ReferenceEquals(_lastFilterDef, FilterDef)) 
+        {
+            _lastFilterDef = FilterDef;
+            if (_editContext != null)
+                _editContext.OnValidationRequested -= HandleValidationRequested;
+            _editContext = new(FilterDef);
+            _editContext.OnValidationRequested += HandleValidationRequested;
+            _messageStore = new(_editContext);
+            _editContext.Validate();
+        }
+    }
+
+    void IDisposable.Dispose()
+    {
+        GC.SuppressFinalize(this);
+        if (_editContext != null)
+            _editContext.OnValidationRequested -= HandleValidationRequested;
+    }
+
+    private void HandleValidationRequested(object? sender,
+        ValidationRequestedEventArgs args)
+    {
+        _messageStore?.Clear();
+        if (FilterDef.From != null && FilterDef.To != null && FilterDef.From > FilterDef.To)
+        {
+            _messageStore?.Add(() => FilterDef.From, Texts.Get(TextKeys.InvalidRange));
+            _messageStore?.Add(() => FilterDef.To, Texts.Get(TextKeys.InvalidRange));
+        }
+    }
+
+    /// <inheritdoc/>
+    protected internal override async ValueTask ShownAsync()
+    {
+        ElementReference? vt = fromRef?.Element;
+        if (vt.HasValue)
+            await vt.Value.FocusAsync();
+    }
+
+    /// <inheritdoc/>
+    protected internal override bool Validate() 
+    {
+        if (!_editContext.Validate())
+            return false;
+        return true;
+    }
+}

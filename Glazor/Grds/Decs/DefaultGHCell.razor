@@ -1,0 +1,19 @@
+﻿@namespace Glazor.Grds.Decs
+
+@using Glazor.Grds
+@using Glazor.Misc
+
+@typeparam TGridItem
+
+@code {
+
+    /// <summary>The group header cell to draw, as <c>GHCellTemplate</c> receives it.</summary>
+    [Parameter]
+    public IGrid<TGridItem>.GHCellTemplateParam Param { get; set; } = null!;
+}
+
+<th colspan="@Param.ColSpan" rowspan="@Param.RowSpan" scope="colgroup">
+    <Clamper LinesToClamp="1">
+        @Param.GroupId
+    </Clamper>
+</th>

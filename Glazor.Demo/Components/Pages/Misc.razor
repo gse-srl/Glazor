@@ -1,0 +1,59 @@
+﻿@page "/misc"
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Glazor demo - Tabs, forms, dialogs</PageTitle>
+<h1>Tabs, forms, dialogs</h1>
+
+<Tabs LabelsPosition="LabelsPosition.Top">
+    <Tab Name="form" Label="Form">
+        <p>A validation message shown as an icon: Tab to it and press Space, or hover it.</p>
+        <EditForm Model="_contact" OnValidSubmit="() => _submitted = true" class="contact">
+            <DataAnnotationsValidator />
+            <label for="name">Name</label>
+            <InputText id="name" @bind-Value="_contact.Name" />
+            <span class="msg"><PopupValidationMessage For="@(() => _contact.Name)" ShowWhenMouseOver="true" /></span>
+            <label for="email">Email</label>
+            <InputText id="email" @bind-Value="_contact.Email" />
+            <span class="msg"><PopupValidationMessage For="@(() => _contact.Email)" ShowWhenMouseOver="true" /></span>
+            <div class="actions">
+                <button type="submit">Submit</button>
+                @if (_submitted)
+                {
+                    <span class="saved">saved</span>
+                }
+            </div>
+        </EditForm>
+    </Tab>
+    <Tab Name="clamper" Label="Clamper">
+        <p>A long text clamped to two lines; the ellipsis opens the whole text on hover.</p>
+        <div style="width: 260px; border: 1px dashed gray; padding: 4px;">
+            <Clamper LinesToClamp="2">
+                The quick brown fox jumps over the lazy dog, then runs around the barn twice before settling down under the old oak tree
+                for the rest of the afternoon, where nothing much happens until supper.
+            </Clamper>
+        </div>
+    </Tab>
+    <Tab Name="dialog" Label="Dialog">
+        <button type="button" @onclick="() => _dialog.ShowModalAsync()">Open a dialog</button>
+        <DialogBox @ref="_dialog" Class="demo-dialog">
+            <p>A modal DialogBox over the native dialog element. Esc closes it.</p>
+            <button type="button" @onclick="() => _dialog.CloseAsync()">Close</button>
+        </DialogBox>
+    </Tab>
+    <Tab Name="disabled" Label="Disabled" Disabled="true" Tooltip="A tab that cannot be selected">never shown</Tab>
+</Tabs>
+
+@code {
+    private readonly Contact _contact = new();
+    private bool _submitted;
+    private DialogBox _dialog = null!;
+
+    private sealed class Contact
+    {
+        [Required(ErrorMessage = "A name is required")]
+        public string? Name { get; set; }
+
+        [Required(ErrorMessage = "An email is required"), EmailAddress(ErrorMessage = "Not an email address")]
+        public string? Email { get; set; }
+    }
+}

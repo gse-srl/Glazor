@@ -1,0 +1,65 @@
+﻿/* Aurora, a light theme with a deep indigo header lit by a teal glow: the --glazor-* custom properties of glazor.css with its
+   values, soft violet for the current row, teal for the links and the main buttons, amber for the accents. The header's
+   links take a light teal of their own, since --glazor-link also colours the links in the rows. Link it after glazor.css,
+   on a page with a light background of its own, such as #f6f7fb. */
+:root {
+    --glazor-color-scheme: light;
+    --glazor-fg: #1e1b3a;
+    --glazor-link: #0b625b;
+    --glazor-header-bg: #2e2a6b;
+    --glazor-header-fixed-bg: #3a3580;
+    --glazor-header-fg: #e9e7ff;
+    --glazor-header-border: #4b4596;
+    --glazor-rule: #8b7fe8;
+    --glazor-row-odd-bg: #ffffff;
+    --glazor-row-even-bg: #f6f5fd;
+    --glazor-row-current-bg: #ebe7ff;
+    --glazor-row-edited-bg: #ddd6ff;
+    --glazor-cell-current-bg: #d2c9ff;
+    --glazor-no-data-fg: #625f88;
+    --glazor-focus-outline: #14b8a6;
+    --glazor-tree-indent: #eeecfa;
+    --glazor-scroll-track-bg: #f1f0fa;
+    --glazor-scroll-handle-bg: #a99ff0;
+    --glazor-scroll-button-bg: #d9d5f5;
+    --glazor-button-bg: #f1f0fa;
+    --glazor-button-fg: #1e1b3a;
+    --glazor-primary-bg: #0b625b;
+    --glazor-primary-fg: #ffffff;
+    --glazor-popup-bg: #ffffff;
+    --glazor-popup-border: #e2dff5;
+    --glazor-popup-shadow: 0 10px 28px rgba(46, 42, 107, 0.18);
+    --glazor-popup-hover-bg: #f4f2fd;
+    --glazor-overlay-shadow: 0 16px 40px rgba(46, 42, 107, 0.28);
+    --glazor-backdrop: rgba(30, 27, 58, 0.45);
+    --glazor-spinner: #14b8a6;
+    --glazor-spinner-backdrop: rgba(30, 27, 58, 0.18);
+    --glazor-clamper-mark: #c7f5ee;
+    --glazor-clamper-popup-bg: #ffffff;
+    --glazor-clamper-popup-border: #625f88;
+    --glazor-message-bg: #ffffff;
+    --glazor-message-border: #d6336c;
+    --glazor-message-icon: #d6336c;
+    --glazor-message-icon-bg: #ffffff;
+    --glazor-icon-accent: #ffb347;
+    --glazor-tab-border: #d9d5f5;
+    --glazor-tab-secondary-border: #e8e5fa;
+    --glazor-tab-bg: #ffffff;
+    --glazor-tab-label-inactive-bg: #eeecfa;
+    --glazor-tab-label-disabled-bg: #f4f3fb;
+    --glazor-tab-label-fg: #1e1b3a;
+    --glazor-tab-label-inactive-fg: #5b5885;
+    --glazor-tab-label-disabled-fg: #a9a6c7;
+    /* its own: the glow of the header and the colour of the header's links */
+    --aurora-header-shine: rgba(255, 255, 255, 0.05);
+    --aurora-header-glow: rgba(20, 184, 166, 0.16);
+    --aurora-header-link: #7ef0e0;
+}
+
+div.glazor.grigliaria thead th {
+    background-image: linear-gradient(180deg, var(--aurora-header-shine), var(--aurora-header-glow));
+}
+
+div.glazor.grigliaria thead a.glazor {
+    color: var(--aurora-header-link);
+}

@@ -1,0 +1,8 @@
+﻿@namespace Glazor.Misc
+
+<dialog @attributes="AdditionalAttributes" @ref=_dialogRef closedby="@ClosedBy.ToString().ToLowerInvariant()" class="glazor dialog @Class" onclose="@OnCloseAsync" style="outline:none; @Style">
+    <div @key="_currentShowId" style="display: contents;">
+        @ChildContent
+    </div>
+</dialog>
+

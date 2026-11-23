@@ -1,0 +1,58 @@
+﻿@page "/tree"
+@using Glazor.Grds.Mdls
+
+<PageTitle>Glazor demo - Treegliaria</PageTitle>
+<h1>Treegliaria</h1>
+<p>Regions, countries and cities, over more columns than fit. The model holds a flat list; an expander click rebuilds
+    it without the collapsed node's descendants, as the docs describe. Ctrl+Space toggles the current node.</p>
+
+<Treegliaria TGridItem="PlaceNode" Model="_tree" Spinner="@Gui.Spinner" RowHeight="32" HeaderHeight="40" RowDialogEnabled="true"
+             VertResizer="@(GridVertResizers.RowHeight("flex: 1 1 0; min-height: 12rem;", 4, 60))"
+             HorzResizer="@(GridHorzResizers.DispUnitWidth(40, 100, 12))">
+    <GridColumn Property="@(x => x.Name)" Name="Name" Label="Place" PreferredSize="30" Sortable="false" Filterable="false" />
+    <GridColumn Property="@(x => x.Population)" Name="Population" Label="Population" PreferredSize="12" Alignment="Alignment.Right" Sortable="false" Filterable="false" />
+    <GridColumn Property="@(x => x.Area)" Name="Area" Label="Area (km²)" PreferredSize="12" Alignment="Alignment.Right" Sortable="false" Filterable="false" />
+    <GridColumn Property="@(x => x.Density)" Name="Density" Label="Density" PreferredSize="10" Alignment="Alignment.Right" Sortable="false" Filterable="false" />
+    <GridColumn Property="@(x => x.Capital)" Name="Capital" Label="Capital" PreferredSize="18" Sortable="false" Filterable="false" />
+    <GridColumn Property="@(x => x.Currency)" Name="Currency" Label="Currency" PreferredSize="9" Sortable="false" Filterable="false" />
+    <GridColumn Property="@(x => x.Timezone)" Name="Timezone" Label="Timezone" PreferredSize="10" Sortable="false" Filterable="false" />
+    <GridColumn Property="@(x => x.Founded)" Name="Founded" Label="Founded" PreferredSize="8" Alignment="Alignment.Right" Sortable="false" Filterable="false" />
+    <GridColumn Property="@(x => x.Code)" Name="Code" Label="Code" PreferredSize="8" Sortable="false" Filterable="false" />
+</Treegliaria>
+
+@code {
+    [CascadingParameter] public GuiHelper Gui { get; set; } = null!;
+
+    private readonly List<PlaceNode> _roots = SampleData.Places();
+    private TreeGridModel<PlaceNode> _tree = null!;
+
+    protected override void OnInitialized()
+    {
+        _tree = new() { ItemKeyFn = n => n.Id, OnSetExpand = SetExpandAsync };
+        Rebuild();
+    }
+
+    private ValueTask SetExpandAsync(int rowIndex, bool expanded)
+    {
+        PlaceNode node = _tree.GetItem(rowIndex);
+        if (node.Expanded != expanded)
+        {
+            node.Expanded = expanded;
+            Rebuild();
+        }
+        return ValueTask.CompletedTask;
+    }
+
+    private void Rebuild() => _tree.GetData().Set(Flatten(_roots).ToList());
+
+    private static IEnumerable<PlaceNode> Flatten(IEnumerable<PlaceNode> nodes)
+    {
+        foreach (PlaceNode node in nodes)
+        {
+            yield return node;
+            if (node.Expanded)
+                foreach (PlaceNode child in Flatten(node.Children))
+                    yield return child;
+        }
+    }
+}

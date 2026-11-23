@@ -1,0 +1,52 @@
+﻿@namespace Glazor.Tabs
+@implements IDisposable
+
+@code {
+    /// <summary>Required. The tab's text.</summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; }
+
+    /// <summary>Required. The tab's stable identity, for <c>SetCurrentTabAsync</c> and the element ids.</summary>
+    [Parameter, EditorRequired]
+    public string Name { get; set; }
+
+    /// <summary>Required. The tab's panel.</summary>
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; }
+
+    /// <summary>Leaves the tab out; a current tab that turns hidden gives way to the first tab neither hidden nor disabled. Show or hide a tab with it rather than an <c>@if</c>.</summary>
+    [Parameter]
+    public bool Hidden { get; set; } = false;
+
+    /// <summary>Shows the tab but refuses selecting it; a current tab that turns disabled stays current.</summary>
+    [Parameter]
+    public bool Disabled { get; set; } = false;
+
+    /// <summary>The label's <c>title</c>.</summary>
+    [Parameter]
+    public string? Tooltip { get; set; }
+
+    [CascadingParameter]
+    Tabs Tabs { get; set; } = null!;
+
+    /// <inheritdoc/>
+    protected override void OnInitialized()
+    {
+        Tabs.AddTab(this);
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Tabs.RemoveTab(this);
+    }
+
+    internal bool IsActive => this == Tabs.CurrentTab;
+
+    // IDREF attributes split on whitespace, so every other character goes in as its code; "_" too, so no two names give one id
+    private static string IdSafe(string s) => System.Text.RegularExpressions.Regex.Replace(s, "[^A-Za-z0-9-]", m => $"_{(int)m.Value[0]:x}_");
+
+    internal string TabId => $"{IdSafe(Tabs.IdPrefix)}_tab_{IdSafe(Name)}";
+
+    internal string PanelId => $"{IdSafe(Tabs.IdPrefix)}_panel_{IdSafe(Name)}";
+}
