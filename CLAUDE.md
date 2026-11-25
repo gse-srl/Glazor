@@ -41,7 +41,7 @@ for paged models it acts on loaded data only. A
 current-row fast path exists for the common case. The selection stabilizer is debounced, so it runs
 once per settled selection, not per keystroke.
 
-**`ADataGrid._defaultTouchScrollerEnabled` static cache is fine.** `IConfiguration` is app-scoped, so
+**`TouchScrollerDefault.Enabled` static cache is fine.** `IConfiguration` is app-scoped, so
 which grid reads `Grigliaria:TouchScrollerEnabled` first is irrelevant.
 
 **`TempFile` using `Path.GetTempFileName()` is fine.** The 65,535-files cap a reviewer will

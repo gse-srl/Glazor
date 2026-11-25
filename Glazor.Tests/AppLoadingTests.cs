@@ -22,6 +22,8 @@ public class AppLoadingTests
             Assert.That(ctx.Render<AppLoading>().Find(".glazor.app-loading div.spinner").GetAttribute("role"), Is.EqualTo("status"));
             Assert.That(ctx.Render<Spinner>().FindAll("dialog.glazor.spinner-container"), Has.Count.EqualTo(1), "the dialog the rule waits for");
             Assert.That(css, Does.Match(@"body:has\(dialog\.glazor\.spinner-container\)\s+\.glazor\.app-loading\s*\{\s*display:\s*none;"));
+            Assert.That(css, Does.Match(@"body:has\(#blazor-error-ui\[style\*=""display: block""\]\)\s+\.glazor\.app-loading\s*\{\s*display:\s*none;"),
+                "and under the error bar Blazor shows when the circuit fails first");
         });
     }
 }

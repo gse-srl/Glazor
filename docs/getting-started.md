@@ -52,9 +52,16 @@ wheel, and `glazor.css` hides it once the layout's `Spinner` is in the page:
 <body>
     <AppLoading />
     <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+    <div id="blazor-error-ui">...</div>
     ...
 </body>
 ```
+
+Keep the template's `#blazor-error-ui` there too, in `App.razor`, and not in the layout, where the template puts it. With
+prerendering off the layout comes with the circuit's first render: when that render throws, the layout never reaches the
+browser, Blazor finds no error bar to show, and the wheel turns for good. In `App.razor` the bar is in the page from the
+start, and `glazor.css` hides the wheel when Blazor shows it. Its styles then move from the layout's scoped CSS to a
+stylesheet that reaches `App.razor`.
 
 With individual accounts the template sets the render mode only where `HttpContext.AcceptsInteractiveRouting()`,
 leaving the account pages marked `[ExcludeFromInteractiveRouting]` static; a page with a grid must not be excluded.

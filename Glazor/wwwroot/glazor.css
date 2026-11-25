@@ -345,6 +345,10 @@ dialog.glazor.spinner-container::backdrop {
 body:has(dialog.glazor.spinner-container) .glazor.app-loading {
     display: none;
 }
+/* or until the circuit fails before that: blazor.web.js shows the error bar by setting its inline display */
+body:has(#blazor-error-ui[style*="display: block"]) .glazor.app-loading {
+    display: none;
+}
 
 dialog.glazor.clamper-popup {
     background-color: var(--glazor-clamper-popup-bg);

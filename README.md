@@ -80,12 +80,7 @@ table, and the footer has the search, the row dialog and the reload.
 **Filters and layout.** A filter that lists the values its column holds, read from the database; and the layout dialog,
 where the user picks, orders and sizes the columns, saved with the filters and the sort in a `Memento`.
 
-<table>
-  <tr>
-    <td valign="top"><img src="https://raw.githubusercontent.com/gse-srl/Glazor/main/assets/screenshots/filter.png" alt="The Genre filter: the genres in the table, each with a checkbox"></td>
-    <td valign="top"><img src="https://raw.githubusercontent.com/gse-srl/Glazor/main/assets/screenshots/layout.png" alt="The layout dialog: hidden and visible columns with their sizes"></td>
-  </tr>
-</table>
+![The Genre filter: the genres in the table, each with a checkbox](https://raw.githubusercontent.com/gse-srl/Glazor/main/assets/screenshots/filter.png) ![The layout dialog: hidden and visible columns with their sizes](https://raw.githubusercontent.com/gse-srl/Glazor/main/assets/screenshots/layout.png)
 
 **Editing in place.** The row edited in the grid, with the cancel and save buttons on its heading and the validation
 message on the field that breaks a rule.

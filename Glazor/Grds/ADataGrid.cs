@@ -20,8 +20,6 @@ public abstract class ADataGrid<TGridItem> : AGrid<TGridItem>, IDataGrid<TGridIt
 
     [Inject] private IConfiguration Config { get; init; } = null!;
 
-    private static bool? _defaultTouchScrollerEnabled;
-
     /// <summary>Tracks a current cell as well as a current row, which enables the left and right keys and the column index of <c>OnDblClick</c>.</summary>
     [Parameter]
     public bool CellCursorEnabled { get; set; } = true;
@@ -117,14 +115,14 @@ public abstract class ADataGrid<TGridItem> : AGrid<TGridItem>, IDataGrid<TGridIt
         // Check if the parent element explicitly provided this parameter
         if (!parameters.TryGetValue<bool>(nameof(TouchScrollerEnabled), out _))
         {
-            if (!_defaultTouchScrollerEnabled.HasValue)
+            if (!TouchScrollerDefault.Enabled.HasValue)
             {
                 // If not provided, fetch the fallback default from appsettings.json
-                _defaultTouchScrollerEnabled = Config.GetValue<bool>("Grigliaria:TouchScrollerEnabled", false);
+                TouchScrollerDefault.Enabled = Config.GetValue<bool>("Grigliaria:TouchScrollerEnabled", false);
                 Logger.LogInformation("Using fallback value from appsettings.json \"Grigliaria:TouchScrollerEnabled\": {TouchScrollerEnabled}",
-                    _defaultTouchScrollerEnabled.Value);
+                    TouchScrollerDefault.Enabled.Value);
             }
-            TouchScrollerEnabled = _defaultTouchScrollerEnabled.Value;
+            TouchScrollerEnabled = TouchScrollerDefault.Enabled.Value;
         }
         return base.SetParametersAsync(parameters);
     }
@@ -1016,6 +1014,12 @@ public abstract class ADataGrid<TGridItem> : AGrid<TGridItem>, IDataGrid<TGridIt
             _pendingSort = null;
         }
     }
+}
+
+// Outside ADataGrid<TGridItem>: a static field there exists once per row type, each reading and logging the default again.
+internal static class TouchScrollerDefault
+{
+    internal static bool? Enabled;
 }
 
 // PreferredSize defaults to the type's own, the value options that skip defaults leave out of the JSON
